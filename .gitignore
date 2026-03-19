@@ -1,0 +1,9 @@
+build/
+out/
+*.obj
+*.o
+*.exe
+*.pdb
+*.ilk
+*.log
+build-linux/
