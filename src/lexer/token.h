@@ -12,6 +12,7 @@ enum class TokenKind {
     IntegerLiteral,
     RealLiteral,
     CharLiteral,
+    StringLiteral,
 
     Program,
     Const,
@@ -39,6 +40,7 @@ enum class TokenKind {
     Case,
     Repeat,
     Until,
+    Break,
     Read,
     Write,
     Div,
@@ -91,6 +93,8 @@ inline const char* tokenKindName(TokenKind kind) {
         return "RealLiteral";
     case TokenKind::CharLiteral:
         return "CharLiteral";
+    case TokenKind::StringLiteral:
+        return "StringLiteral";
     case TokenKind::Program:
         return "Program";
     case TokenKind::Const:
@@ -143,6 +147,8 @@ inline const char* tokenKindName(TokenKind kind) {
         return "Repeat";
     case TokenKind::Until:
         return "Until";
+    case TokenKind::Break:
+        return "Break";
     case TokenKind::Read:
         return "Read";
     case TokenKind::Write:

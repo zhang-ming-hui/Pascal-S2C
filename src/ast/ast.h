@@ -14,6 +14,7 @@ enum class BasicTypeKind {
     Real,
     Boolean,
     Char,
+    String,
     Void
 };
 
@@ -76,6 +77,8 @@ struct Stmt : Node {
 struct CompoundStmtNode : Stmt {
     std::vector<std::unique_ptr<Stmt>> statements;
 };
+
+struct BreakStmtNode : Stmt {};
 
 struct AssignStmtNode : Stmt {
     std::unique_ptr<Expr> target;
@@ -165,7 +168,8 @@ enum class LiteralKind {
     Int,
     Real,
     Bool,
-    Char
+    Char,
+    String
 };
 
 struct LiteralExprNode : Expr {

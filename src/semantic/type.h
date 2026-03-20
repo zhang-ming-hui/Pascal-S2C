@@ -42,6 +42,10 @@ inline bool isCharType(const TypeInfo& type) {
     return !type.isArray && type.basic == BasicTypeKind::Char;
 }
 
+inline bool isStringType(const TypeInfo& type) {
+    return !type.isArray && type.basic == BasicTypeKind::String;
+}
+
 inline bool sameBounds(const std::vector<ArrayBound>& lhs, const std::vector<ArrayBound>& rhs) {
     if (lhs.size() != rhs.size()) {
         return false;
@@ -72,6 +76,8 @@ inline std::string toString(BasicTypeKind kind) {
         return "boolean";
     case BasicTypeKind::Char:
         return "char";
+    case BasicTypeKind::String:
+        return "string";
     case BasicTypeKind::Void:
     default:
         return "void";

@@ -231,6 +231,11 @@ private:
             return;
         }
 
+        if (dynamic_cast<const BreakStmtNode*>(&stmt) != nullptr) {
+            writer_.writeLine("break;");
+            return;
+        }
+
         if (const auto* callStmt = dynamic_cast<const CallStmtNode*>(&stmt)) {
             writer_.writeLine(emitCall(callStmt->name, callStmt->args, view_.semantic->callStmtBindings.at(callStmt), context) + ";");
             return;
@@ -316,7 +321,7 @@ private:
 
     RenderedExpr renderExpr(const Expr& expr, const FunctionContext* context) const {
         if (const auto* literal = dynamic_cast<const LiteralExprNode*>(&expr)) {
-            return RenderedExpr{literal->rawText, kPrecPrimary, nullptr};
+            return RenderedExpr{emitLiteralText(*literal), kPrecPrimary, nullptr};
         }
 
         if (const auto* var = dynamic_cast<const VarExprNode*>(&expr)) {
@@ -530,6 +535,8 @@ private:
             return "bool";
         case BasicTypeKind::Char:
             return "char";
+        case BasicTypeKind::String:
+            return "char *";
         case BasicTypeKind::Void:
         default:
             return "void";
@@ -555,6 +562,8 @@ private:
             return "%f";
         case BasicTypeKind::Char:
             return "%c";
+        case BasicTypeKind::String:
+            return "%s";
         case BasicTypeKind::Void:
         default:
             return "%d";
@@ -570,10 +579,37 @@ private:
             return "%f";
         case BasicTypeKind::Char:
             return "%c";
+        case BasicTypeKind::String:
+            return "%s";
         case BasicTypeKind::Void:
         default:
             return "%d";
         }
+    }
+
+    std::string emitLiteralText(const LiteralExprNode& literal) const {
+        if (literal.kind == LiteralKind::Bool) {
+            return literal.rawText == "False" || literal.rawText == "FALSE" || literal.rawText == "false" ? "false" : "true";
+        }
+        if (literal.kind != LiteralKind::String) {
+            return literal.rawText;
+        }
+
+        std::string result = "\"";
+        for (std::size_t i = 1; i + 1 < literal.rawText.size(); ++i) {
+            const char ch = literal.rawText[i];
+            if (ch == '\'' && i + 1 < literal.rawText.size() - 1 && literal.rawText[i + 1] == '\'') {
+                result += '\'';
+                ++i;
+                continue;
+            }
+            if (ch == '\\' || ch == '"') {
+                result += '\\';
+            }
+            result += ch;
+        }
+        result += "\"";
+        return result;
     }
 
     std::string binaryOp(const BinaryExprNode& expr) const {
@@ -634,4 +670,6 @@ std::string CCodeGenerator::generate(const LoweredProgramView& program) const {
 }
 
 }  // namespace pascal_s2c
+
+
 

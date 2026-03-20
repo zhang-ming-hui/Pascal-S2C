@@ -21,18 +21,6 @@ public:
             if (isAtEnd()) {
                 break;
             }
-            if (peek() == '{') {
-                skipBraceComment();
-                continue;
-            }
-            if (peek() == '/' && peekNext() == '/') {
-                skipLineComment();
-                continue;
-            }
-            if (peek() == '(' && peekNext() == '*') {
-                skipParenComment();
-                continue;
-            }
 
             const SourceLocation start = location_;
             const char current = peek();
@@ -48,7 +36,7 @@ public:
             }
 
             if (current == '\'') {
-                tokens.push_back(scanCharLiteral(start));
+                tokens.push_back(scanQuotedLiteral(start));
                 continue;
             }
 
@@ -200,6 +188,7 @@ private:
             {"case", TokenKind::Case},
             {"repeat", TokenKind::Repeat},
             {"until", TokenKind::Until},
+            {"break", TokenKind::Break},
             {"read", TokenKind::Read},
             {"write", TokenKind::Write},
             {"div", TokenKind::Div},
@@ -215,7 +204,7 @@ private:
         if (it != kKeywords.end()) {
             return Token{it->second, lexeme, start};
         }
-        return Token{TokenKind::Identifier, lexeme, start};
+        return Token{TokenKind::Identifier, lowered, start};
     }
 
     Token scanNumber(SourceLocation start) {
@@ -237,22 +226,35 @@ private:
         return Token{isReal ? TokenKind::RealLiteral : TokenKind::IntegerLiteral, lexeme, start};
     }
 
-    Token scanCharLiteral(SourceLocation start) {
+    Token scanQuotedLiteral(SourceLocation start) {
         std::string lexeme;
         lexeme.push_back(advance());
 
-        if (isAtEnd() || peek() == '\n' || peek() == '\r') {
-            throw CompilerError("lexer", "unterminated character literal", start);
+        int charCount = 0;
+        while (!isAtEnd()) {
+            const char ch = advance();
+            lexeme.push_back(ch);
+
+            if (ch == '\n' || ch == '\r') {
+                throw CompilerError("lexer", "unterminated character literal", start);
+            }
+
+            if (ch == '\'') {
+                if (peek() == '\'') {
+                    lexeme.push_back(advance());
+                    ++charCount;
+                    continue;
+                }
+                if (charCount == 1 && lexeme.size() == 3) {
+                    return Token{TokenKind::CharLiteral, lexeme, start};
+                }
+                return Token{TokenKind::StringLiteral, lexeme, start};
+            }
+
+            ++charCount;
         }
 
-        lexeme.push_back(advance());
-
-        if (isAtEnd() || peek() != '\'') {
-            throw CompilerError("lexer", "character literal must contain exactly one character", start);
-        }
-
-        lexeme.push_back(advance());
-        return Token{TokenKind::CharLiteral, lexeme, start};
+        throw CompilerError("lexer", "unterminated character literal", start);
     }
 
     Token scanSymbol(SourceLocation start) {
@@ -321,6 +323,3 @@ TokenList Lexer::tokenize(const std::string& source) const {
 }
 
 }  // namespace pascal_s2c
-
-
-

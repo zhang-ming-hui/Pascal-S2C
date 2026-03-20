@@ -333,6 +333,8 @@ private:
             return parseWhileStatement();
         case TokenKind::For:
             return parseForStatement();
+        case TokenKind::Break:
+            return parseBreakStatement();
         case TokenKind::Read:
             return parseReadStatement();
         case TokenKind::Write:
@@ -421,6 +423,13 @@ private:
         stmt->condition = parseExpression();
         expect(TokenKind::Do, "expected 'do'");
         stmt->body = parseStatement();
+        return stmt;
+    }
+
+    std::unique_ptr<Stmt> parseBreakStatement() {
+        const Token keyword = expect(TokenKind::Break, "expected 'break'");
+        auto stmt = std::make_unique<BreakStmtNode>();
+        stmt->loc = keyword.location;
         return stmt;
     }
 
@@ -578,6 +587,7 @@ private:
         case TokenKind::IntegerLiteral:
         case TokenKind::RealLiteral:
         case TokenKind::CharLiteral:
+        case TokenKind::StringLiteral:
         case TokenKind::True:
         case TokenKind::False:
             return parseLiteral();
@@ -611,6 +621,9 @@ private:
             break;
         case TokenKind::CharLiteral:
             expr->kind = LiteralKind::Char;
+            break;
+        case TokenKind::StringLiteral:
+            expr->kind = LiteralKind::String;
             break;
         case TokenKind::True:
         case TokenKind::False:
@@ -710,5 +723,6 @@ ProgramPtr Parser::parse(const TokenList& tokens) const {
 }
 
 }  // namespace pascal_s2c
+
 
 

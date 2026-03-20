@@ -153,6 +153,10 @@ private:
             return;
         }
 
+        if (dynamic_cast<const BreakStmtNode*>(&stmt) != nullptr) {
+            return;
+        }
+
         if (const auto* forStmt = dynamic_cast<const ForStmtNode*>(&stmt)) {
             const Symbol& symbol = resolveSymbol(forStmt->varName, scope, forStmt->loc);
             if (symbol.type.basic != BasicTypeKind::Integer || symbol.type.isArray) {
@@ -283,6 +287,8 @@ private:
             return makeScalarType(BasicTypeKind::Boolean);
         case LiteralKind::Char:
             return makeScalarType(BasicTypeKind::Char);
+        case LiteralKind::String:
+            return makeScalarType(BasicTypeKind::String);
         default:
             return makeScalarType(BasicTypeKind::Void);
         }
@@ -434,3 +440,4 @@ SemanticContext SemanticAnalyzer::analyze(const ProgramNode& program) const {
 }
 
 }  // namespace pascal_s2c
+

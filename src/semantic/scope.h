@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cctype>
 #include <string>
 #include <unordered_map>
 
@@ -12,11 +13,11 @@ public:
     explicit Scope(const Scope* parent = nullptr) : parent_(parent) {}
 
     bool define(Symbol symbol) {
-        return symbols_.emplace(symbol.name, std::move(symbol)).second;
+        return symbols_.emplace(normalize(symbol.name), std::move(symbol)).second;
     }
 
     const Symbol* lookup(const std::string& name) const {
-        auto it = symbols_.find(name);
+        const auto it = symbols_.find(normalize(name));
         if (it != symbols_.end()) {
             return &it->second;
         }
@@ -24,7 +25,7 @@ public:
     }
 
     const Symbol* lookupLocal(const std::string& name) const {
-        auto it = symbols_.find(name);
+        const auto it = symbols_.find(normalize(name));
         return it != symbols_.end() ? &it->second : nullptr;
     }
 
@@ -37,6 +38,15 @@ public:
     }
 
 private:
+    static std::string normalize(const std::string& name) {
+        std::string lowered;
+        lowered.reserve(name.size());
+        for (const char ch : name) {
+            lowered.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+        }
+        return lowered;
+    }
+
     const Scope* parent_;
     std::unordered_map<std::string, Symbol> symbols_;
 };
