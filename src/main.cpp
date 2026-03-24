@@ -86,7 +86,9 @@ int main(int argc, char** argv) {
 
     try {
         pascal_s2c::Compiler compiler;
+        // 将 Pascal 源文件编译为 C 源码文本。
         const std::string output = compiler.compileFile(options->inputPath);
+        // 未指定 -o 时，默认将输入文件后缀替换为 .c 作为输出路径。
         const std::string outputPath = options->outputPath.value_or(inferOutputPath(options->inputPath));
 
         std::ofstream out(outputPath, std::ios::binary);

@@ -16,6 +16,7 @@ std::string Compiler::compileSource(const std::string& source) const {
     LoweringPass lowering;
     CCodeGenerator codegen;
 
+    // 前端流水线：源码 -> token 序列 -> AST -> 语义上下文 -> lowered 视图 -> C 代码文本。
     TokenList tokens = lexer.tokenize(source);
     ProgramPtr program = parser.parse(tokens);
     SemanticContext semantic = analyzer.analyze(*program);
@@ -24,6 +25,7 @@ std::string Compiler::compileSource(const std::string& source) const {
 }
 
 std::string Compiler::compileFile(const std::string& path) const {
+    // 文件入口统一复用 compileSource 的编译流水线。
     return compileSource(readTextFile(path));
 }
 
