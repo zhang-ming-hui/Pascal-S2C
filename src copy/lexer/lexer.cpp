@@ -1,122 +1,13 @@
 #include "lexer/lexer.h"
 
-#include <array>
 #include <cctype>
-#include <optional>
-#include <string_view>
-#include <vector>
+#include <unordered_map>
 
 #include "common/error.h"
 
 namespace pascal_s2c {
 
 namespace {
-
-class KeywordTrie {
-public:
-    KeywordTrie() {
-        nodes_.push_back(Node{});
-
-        insert("program", TokenKind::Program);
-        insert("const", TokenKind::Const);
-        insert("var", TokenKind::Var);
-        insert("type", TokenKind::Type);
-        insert("record", TokenKind::Record);
-        insert("array", TokenKind::Array);
-        insert("of", TokenKind::Of);
-        insert("begin", TokenKind::Begin);
-        insert("end", TokenKind::End);
-        insert("function", TokenKind::Function);
-        insert("procedure", TokenKind::Procedure);
-        insert("integer", TokenKind::Integer);
-        insert("real", TokenKind::Real);
-        insert("boolean", TokenKind::Boolean);
-        insert("char", TokenKind::Char);
-        insert("if", TokenKind::If);
-        insert("then", TokenKind::Then);
-        insert("else", TokenKind::Else);
-        insert("while", TokenKind::While);
-        insert("do", TokenKind::Do);
-        insert("for", TokenKind::For);
-        insert("to", TokenKind::To);
-        insert("downto", TokenKind::Downto);
-        insert("case", TokenKind::Case);
-        insert("repeat", TokenKind::Repeat);
-        insert("until", TokenKind::Until);
-        insert("break", TokenKind::Break);
-        insert("read", TokenKind::Read);
-        insert("write", TokenKind::Write);
-        insert("div", TokenKind::Div);
-        insert("mod", TokenKind::Mod);
-        insert("and", TokenKind::And);
-        insert("or", TokenKind::Or);
-        insert("not", TokenKind::Not);
-        insert("true", TokenKind::True);
-        insert("false", TokenKind::False);
-    }
-
-    std::optional<TokenKind> find(std::string_view word) const {
-        int nodeIndex = 0;
-        for (char ch : word) {
-            const int nextIndex = childIndex(nodeIndex, ch);
-            if (nextIndex < 0) {
-                return std::nullopt;
-            }
-            nodeIndex = nextIndex;
-        }
-        return nodes_[static_cast<std::size_t>(nodeIndex)].kind;
-    }
-
-private:
-    static constexpr int kAlphabetSize = 26;
-
-    struct Node {
-        std::array<int, kAlphabetSize> children{};
-        std::optional<TokenKind> kind;
-
-        Node() {
-            children.fill(-1);
-        }
-    };
-
-    static int charToIndex(char ch) {
-        return (ch >= 'a' && ch <= 'z') ? (ch - 'a') : -1;
-    }
-
-    void insert(std::string_view word, TokenKind kind) {
-        int nodeIndex = 0;
-        for (char ch : word) {
-            const int edge = charToIndex(ch);
-            if (edge < 0) {
-                continue;
-            }
-
-            int& child = nodes_[static_cast<std::size_t>(nodeIndex)].children[edge];
-            if (child < 0) {
-                child = static_cast<int>(nodes_.size());
-                nodes_.push_back(Node{});
-            }
-            nodeIndex = child;
-        }
-        nodes_[static_cast<std::size_t>(nodeIndex)].kind = kind;
-    }
-
-    int childIndex(int nodeIndex, char ch) const {
-        const int edge = charToIndex(ch);
-        if (edge < 0) {
-            return -1;
-        }
-        return nodes_[static_cast<std::size_t>(nodeIndex)].children[edge];
-    }
-
-    std::vector<Node> nodes_;
-};
-
-const KeywordTrie& keywordTrie() {
-    static const KeywordTrie trie;
-    return trie;
-}
-
 
 class LexerScanner {
 public:
@@ -270,9 +161,48 @@ private:
             lowered.push_back(toLowerAscii(ch));
         }
 
-        const std::optional<TokenKind> kind = keywordTrie().find(lowered);
-        if (kind.has_value()) {
-            return Token{*kind, lexeme, start};
+        static const std::unordered_map<std::string, TokenKind> kKeywords = {
+            {"program", TokenKind::Program},
+            {"const", TokenKind::Const},
+            {"var", TokenKind::Var},
+            {"type", TokenKind::Type},
+            {"record", TokenKind::Record},
+            {"array", TokenKind::Array},
+            {"of", TokenKind::Of},
+            {"begin", TokenKind::Begin},
+            {"end", TokenKind::End},
+            {"function", TokenKind::Function},
+            {"procedure", TokenKind::Procedure},
+            {"integer", TokenKind::Integer},
+            {"real", TokenKind::Real},
+            {"boolean", TokenKind::Boolean},
+            {"char", TokenKind::Char},
+            {"if", TokenKind::If},
+            {"then", TokenKind::Then},
+            {"else", TokenKind::Else},
+            {"while", TokenKind::While},
+            {"do", TokenKind::Do},
+            {"for", TokenKind::For},
+            {"to", TokenKind::To},
+            {"downto", TokenKind::Downto},
+            {"case", TokenKind::Case},
+            {"repeat", TokenKind::Repeat},
+            {"until", TokenKind::Until},
+            {"break", TokenKind::Break},
+            {"read", TokenKind::Read},
+            {"write", TokenKind::Write},
+            {"div", TokenKind::Div},
+            {"mod", TokenKind::Mod},
+            {"and", TokenKind::And},
+            {"or", TokenKind::Or},
+            {"not", TokenKind::Not},
+            {"true", TokenKind::True},
+            {"false", TokenKind::False},
+        };
+
+        const auto it = kKeywords.find(lowered);
+        if (it != kKeywords.end()) {
+            return Token{it->second, lexeme, start};
         }
         return Token{TokenKind::Identifier, lowered, start};
     }
