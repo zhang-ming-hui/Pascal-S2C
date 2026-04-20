@@ -91,9 +91,11 @@ private:
                 continue;
             }
 
-            int& child = nodes_[static_cast<std::size_t>(nodeIndex)].children[edge];
+            const std::size_t currentIndex = static_cast<std::size_t>(nodeIndex);
+            int child = nodes_[currentIndex].children[edge];
             if (child < 0) {
                 child = static_cast<int>(nodes_.size());
+                nodes_[currentIndex].children[edge] = child;
                 nodes_.push_back(Node{});
             }
             nodeIndex = child;
