@@ -15,7 +15,7 @@ public:
     // 执行词法分析。
     // 示例输入："program main; begin end."
     // 示例输出（kind 序列）：Program, Identifier, Semicolon, Begin, End, Dot, EndOfFile
-    TokenList tokenize(const std::string& source) const;
+    LexerResult tokenize(const std::string& source) const;
 };
 
 }  // namespace pascal_s2c

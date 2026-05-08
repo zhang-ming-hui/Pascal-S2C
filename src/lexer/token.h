@@ -235,4 +235,17 @@ inline const char* tokenKindName(TokenKind kind) {
     }
 }
 
+struct LexicalError {
+    std::string message;      // 错误描述
+    SourceLocation location;  // 错误发生位置
+};
+
+// 词法分析结果：包含 Token 列表和错误列表
+struct LexerResult {
+    TokenList tokens;                    // 成功识别的 Token 序列
+    std::vector<LexicalError> errors;    // 词法错误列表
+};
+
 }  // namespace pascal_s2c
+
+

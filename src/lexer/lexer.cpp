@@ -13,11 +13,28 @@ class LexerScanner {
 public:
     explicit LexerScanner(const std::string& source) : source_(source) {}
 
-    TokenList scan() {
-        TokenList tokens;
+    LexerResult scan() {
+        LexerResult result;
+        lastCommentStart_ = SourceLocation{-1, -1};  // 初始化
 
         while (!isAtEnd()) {
-            skipWhitespaceAndComments();
+            try {
+                skipWhitespaceAndComments();
+            } catch (const CompilerError& e) {
+                LexicalError err;
+                err.message = e.what();
+                // 如果之前保存了注释开始位置，使用它
+                if (lastCommentStart_.line != -1) {
+                    err.location = lastCommentStart_;
+                    lastCommentStart_ = SourceLocation{-1, -1};  // 重置
+                } else {
+                    err.location = location_;
+                }
+                result.errors.push_back(err);
+                errorRecovery();
+                continue;
+            }
+            
             if (isAtEnd()) {
                 break;
             }
@@ -25,29 +42,126 @@ public:
             const SourceLocation start = location_;
             const char current = peek();
 
-            if (isIdentifierStart(current)) {
-                tokens.push_back(scanIdentifierOrKeyword(start));
-                continue;
-            }
+            try {
+                if (isIdentifierStart(current)) {
+                    result.tokens.push_back(scanIdentifierOrKeyword(start));
+                    continue;
+                }
 
-            if (std::isdigit(static_cast<unsigned char>(current)) != 0) {
-                tokens.push_back(scanNumber(start));
-                continue;
-            }
+                if (std::isdigit(static_cast<unsigned char>(current)) != 0) {
+                    result.tokens.push_back(scanNumber(start));
+                    continue;
+                }
+                if (current == '.' && std::isdigit(static_cast<unsigned char>(peekNext())) != 0) {
+                    LexicalError err;
+                    err.message = "invalid real number: leading dot not allowed";
+                    err.location = start;
+                    result.errors.push_back(err);
+                    // 跳过 '.' 和后面的数字
+                    advance();  // 跳过 '.'
+                    while (!isAtEnd() && std::isdigit(static_cast<unsigned char>(peek())) != 0) {
+                        advance();
+                    }
+                    continue;
+                }
+                if (current == '\'') {
+                    result.tokens.push_back(scanQuotedLiteral(start));
+                    continue;
+                }
 
-            if (current == '\'') {
-                tokens.push_back(scanQuotedLiteral(start));
-                continue;
+                result.tokens.push_back(scanSymbol(start));
+            } catch (const CompilerError& e) {
+                LexicalError err;
+                err.message = e.what();
+                err.location = start;
+                result.errors.push_back(err);
+                errorRecovery();
             }
-
-            tokens.push_back(scanSymbol(start));
         }
 
-        tokens.push_back(Token{TokenKind::EndOfFile, "", location_});
-        return tokens;
+        result.tokens.push_back(Token{TokenKind::EndOfFile, "", location_});
+        return result;
     }
 
 private:
+    // 错误恢复：跳过当前行剩余的所有字符
+    void errorRecovery() {
+    // 跳过当前行剩余的所有字符，直到遇到换行符或标识符
+        while (!isAtEnd()) {
+            char ch = peek();
+            if (ch == '\n' || ch == '\r') {
+                break;
+            }
+            // 如果遇到字母，可能是下一行的代码，停止跳过
+            if (isIdentifierStart(ch)) {
+                break;
+            }
+            // 否则跳过当前字符
+            advance();
+        }
+        // 注意：不消费换行符，让主循环的 skipWhitespaceAndComments 处理
+    }
+
+    void skipBraceComment() {
+        lastCommentStart_ = location_;  // 保存注释开始位置
+        advance();  // 跳过 '{'
+        while (!isAtEnd() && peek() != '}') {
+            advance();
+        }
+        if (isAtEnd()) {
+            throw CompilerError("lexer", "unterminated comment", lastCommentStart_);
+        }
+        advance();  // 跳过 '}'
+        lastCommentStart_ = SourceLocation{-1, -1};  // 正常结束，重置
+    }
+
+    void skipLineComment() {
+        advance();  // 跳过 '/'
+        advance();  // 跳过 '/'
+        while (!isAtEnd() && peek() != '\n') {
+            advance();
+        }
+    }
+
+    void skipParenComment() {
+        lastCommentStart_ = location_;  // 保存注释开始位置
+        advance();  // 跳过 '('
+        advance();  // 跳过 '*'
+        while (!isAtEnd()) {
+            if (peek() == '*' && peekNext() == ')') {
+                advance();  // 跳过 '*'
+                advance();  // 跳过 ')'
+                lastCommentStart_ = SourceLocation{-1, -1};  // 正常结束，重置
+                return;
+            }
+            advance();
+        }
+        throw CompilerError("lexer", "unterminated comment", lastCommentStart_);
+    }
+
+    void skipWhitespaceAndComments() {
+        while (!isAtEnd()) {
+            const char ch = peek();
+            if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
+                advance();
+                continue;
+            }
+            if (ch == '{') {
+                skipBraceComment();
+                continue;
+            }
+            if (ch == '/' && peekNext() == '/') {
+                skipLineComment();
+                continue;
+            }
+            if (ch == '(' && peekNext() == '*') {
+                skipParenComment();
+                continue;
+            }
+            break;
+        }
+    }
+
     static bool isIdentifierStart(char ch) {
         return ch == '_' || std::isalpha(static_cast<unsigned char>(ch)) != 0;
     }
@@ -89,64 +203,6 @@ private:
         }
         advance();
         return true;
-    }
-
-    void skipWhitespaceAndComments() {
-        while (!isAtEnd()) {
-            const char ch = peek();
-            if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
-                advance();
-                continue;
-            }
-            if (ch == '{') {
-                skipBraceComment();
-                continue;
-            }
-            if (ch == '/' && peekNext() == '/') {
-                skipLineComment();
-                continue;
-            }
-            if (ch == '(' && peekNext() == '*') {
-                skipParenComment();
-                continue;
-            }
-            break;
-        }
-    }
-
-    void skipBraceComment() {
-        const SourceLocation start = location_;
-        advance();
-        while (!isAtEnd() && peek() != '}') {
-            advance();
-        }
-        if (isAtEnd()) {
-            throw CompilerError("lexer", "unterminated comment", start);
-        }
-        advance();
-    }
-
-    void skipLineComment() {
-        advance();
-        advance();
-        while (!isAtEnd() && peek() != '\n') {
-            advance();
-        }
-    }
-
-    void skipParenComment() {
-        const SourceLocation start = location_;
-        advance();
-        advance();
-        while (!isAtEnd()) {
-            if (peek() == '*' && peekNext() == ')') {
-                advance();
-                advance();
-                return;
-            }
-            advance();
-        }
-        throw CompilerError("lexer", "unterminated comment", start);
     }
 
     Token scanIdentifierOrKeyword(SourceLocation start) {
@@ -209,17 +265,25 @@ private:
 
     Token scanNumber(SourceLocation start) {
         std::string lexeme;
+        // 收集整数部分
         while (!isAtEnd() && std::isdigit(static_cast<unsigned char>(peek())) != 0) {
             lexeme.push_back(advance());
         }
 
         bool isReal = false;
-        if (peek() == '.' && peekNext() != '.' &&
-            std::isdigit(static_cast<unsigned char>(peekNext())) != 0) {
+        // 检查是否为实数
+        if (peek() == '.' && peekNext() != '.') {
             isReal = true;
-            lexeme.push_back(advance());
+            lexeme.push_back(advance());  // 消费 '.'
+            
+            // 收集小数部分
             while (!isAtEnd() && std::isdigit(static_cast<unsigned char>(peek())) != 0) {
                 lexeme.push_back(advance());
+            }
+            
+            // 检查是否有多个小数点（如 10.20.30）
+            if (peek() == '.' && peekNext() != '.') {
+                throw CompilerError("lexer", "invalid real number: multiple decimal points", start);
             }
         }
 
@@ -228,7 +292,7 @@ private:
 
     Token scanQuotedLiteral(SourceLocation start) {
         std::string lexeme;
-        lexeme.push_back(advance());
+        lexeme.push_back(advance());  // 保存开头的单引号
 
         int charCount = 0;
         while (!isAtEnd()) {
@@ -236,15 +300,17 @@ private:
             lexeme.push_back(ch);
 
             if (ch == '\n' || ch == '\r') {
-                throw CompilerError("lexer", "unterminated character literal", start);
+                throw CompilerError("lexer", "unterminated character/string literal", start);
             }
 
             if (ch == '\'') {
                 if (peek() == '\'') {
+                    // 两个连续单引号表示一个单引号字符
                     lexeme.push_back(advance());
                     ++charCount;
                     continue;
                 }
+                // 字面量结束
                 if (charCount == 1 && lexeme.size() == 3) {
                     return Token{TokenKind::CharLiteral, lexeme, start};
                 }
@@ -254,7 +320,7 @@ private:
             ++charCount;
         }
 
-        throw CompilerError("lexer", "unterminated character literal", start);
+        throw CompilerError("lexer", "unterminated character/string literal", start);
     }
 
     Token scanSymbol(SourceLocation start) {
@@ -313,11 +379,12 @@ private:
     const std::string& source_;
     std::size_t index_ = 0;
     SourceLocation location_{1, 1};
+    SourceLocation lastCommentStart_{-1, -1};  // 保存注释开始位置
 };
 
 }  // namespace
 
-TokenList Lexer::tokenize(const std::string& source) const {
+LexerResult Lexer::tokenize(const std::string& source) const {
     LexerScanner scanner(source);
     return scanner.scan();
 }
