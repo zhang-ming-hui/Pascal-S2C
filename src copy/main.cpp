@@ -10,14 +10,22 @@
 
 namespace {
 
+enum class OutputMode {
+    Code,
+    Lexer
+};
+
 struct CliOptions {
     std::string inputPath;
     std::optional<std::string> outputPath;
+    OutputMode mode = OutputMode::Code;
 };
 
 void printUsage() {
     std::cerr << "usage: pascal_s2c <input.pas> [output.c]\n";
     std::cerr << "   or: pascal_s2c -i <input.pas> [-o <output.c>]\n";
+    std::cerr << "   or: pascal_s2c --lexer <input.pas> [output.tokens]\n";
+    std::cerr << "   or: pascal_s2c --lexer -i <input.pas> [-o <output.tokens>]\n";
 }
 
 std::optional<CliOptions> parseArgs(int argc, char** argv) {
@@ -26,12 +34,16 @@ std::optional<CliOptions> parseArgs(int argc, char** argv) {
     }
 
     CliOptions options;
-    bool sawFlag = false;
+    bool sawNamedPathFlag = false;
 
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
+        if (arg == "--lexer") {
+            options.mode = OutputMode::Lexer;
+            continue;
+        }
         if (arg == "-i" || arg == "--input") {
-            sawFlag = true;
+            sawNamedPathFlag = true;
             if (i + 1 >= argc) {
                 return std::nullopt;
             }
@@ -39,7 +51,7 @@ std::optional<CliOptions> parseArgs(int argc, char** argv) {
             continue;
         }
         if (arg == "-o" || arg == "--output") {
-            sawFlag = true;
+            sawNamedPathFlag = true;
             if (i + 1 >= argc) {
                 return std::nullopt;
             }
@@ -50,7 +62,7 @@ std::optional<CliOptions> parseArgs(int argc, char** argv) {
             return std::nullopt;
         }
 
-        if (sawFlag) {
+        if (sawNamedPathFlag) {
             return std::nullopt;
         }
 
@@ -69,9 +81,9 @@ std::optional<CliOptions> parseArgs(int argc, char** argv) {
     return options;
 }
 
-std::string inferOutputPath(const std::string& inputPath) {
+std::string inferOutputPath(const std::string& inputPath, OutputMode mode) {
     std::filesystem::path path(inputPath);
-    path.replace_extension(".c");
+    path.replace_extension(mode == OutputMode::Lexer ? ".tokens" : ".c");
     return path.string();
 }
 
@@ -86,10 +98,11 @@ int main(int argc, char** argv) {
 
     try {
         pascal_s2c::Compiler compiler;
-        // 将 Pascal 源文件编译为 C 源码文本。
-        const std::string output = compiler.compileFile(options->inputPath);
-        // 未指定 -o 时，默认将输入文件后缀替换为 .c 作为输出路径。
-        const std::string outputPath = options->outputPath.value_or(inferOutputPath(options->inputPath));
+        const std::string output = options->mode == OutputMode::Lexer
+                                       ? compiler.lexFile(options->inputPath)
+                                       : compiler.compileFile(options->inputPath);
+        const std::string outputPath =
+            options->outputPath.value_or(inferOutputPath(options->inputPath, options->mode));
 
         std::ofstream out(outputPath, std::ios::binary);
         if (!out) {

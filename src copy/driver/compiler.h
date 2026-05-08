@@ -6,6 +6,8 @@ namespace pascal_s2c {
 
 class Compiler {
 public:
+    std::string lexSource(const std::string& source) const;
+    std::string lexFile(const std::string& path) const;
     std::string compileSource(const std::string& source) const;
     std::string compileFile(const std::string& path) const;
 };

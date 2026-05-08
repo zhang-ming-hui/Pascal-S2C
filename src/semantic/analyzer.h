@@ -3,8 +3,10 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "ast/ast.h"
+#include "common/error.h"
 #include "semantic/scope.h"
 #include "semantic/symbol.h"
 #include "semantic/type.h"
@@ -24,7 +26,7 @@ struct SemanticContext {
 
 class SemanticAnalyzer {
 public:
-    SemanticContext analyze(const ProgramNode& program) const;
+    SemanticContext analyze(const ProgramNode& program, std::vector<CompilerError>* diagnostics = nullptr) const;
 };
 
 }  // namespace pascal_s2c

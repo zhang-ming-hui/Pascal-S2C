@@ -3,10 +3,9 @@
 #include <array>
 #include <cctype>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
-
-#include "common/error.h"
 
 namespace pascal_s2c {
 
@@ -128,7 +127,10 @@ public:
         TokenList tokens;
 
         while (!isAtEnd()) {
-            skipWhitespaceAndComments();
+            if (std::optional<Token> error = skipWhitespaceAndComments()) {
+                tokens.push_back(std::move(*error));
+                continue;
+            }
             if (isAtEnd()) {
                 break;
             }
@@ -202,7 +204,7 @@ private:
         return true;
     }
 
-    void skipWhitespaceAndComments() {
+    std::optional<Token> skipWhitespaceAndComments() {
         while (!isAtEnd()) {
             const char ch = peek();
             if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
@@ -210,7 +212,9 @@ private:
                 continue;
             }
             if (ch == '{') {
-                skipBraceComment();
+                if (std::optional<Token> error = skipBraceComment()) {
+                    return error;
+                }
                 continue;
             }
             if (ch == '/' && peekNext() == '/') {
@@ -218,23 +222,29 @@ private:
                 continue;
             }
             if (ch == '(' && peekNext() == '*') {
-                skipParenComment();
+                if (std::optional<Token> error = skipParenComment()) {
+                    return error;
+                }
                 continue;
             }
             break;
         }
+        return std::nullopt;
     }
 
-    void skipBraceComment() {
+    std::optional<Token> skipBraceComment() {
         const SourceLocation start = location_;
+        std::string lexeme;
         advance();
+        lexeme.push_back('{');
         while (!isAtEnd() && peek() != '}') {
-            advance();
+            lexeme.push_back(advance());
         }
         if (isAtEnd()) {
-            throw CompilerError("lexer", "unterminated comment", start);
+            return Token{TokenKind::Error, lexeme, start, "unterminated comment"};
         }
-        advance();
+        lexeme.push_back(advance());
+        return std::nullopt;
     }
 
     void skipLineComment() {
@@ -245,19 +255,22 @@ private:
         }
     }
 
-    void skipParenComment() {
+    std::optional<Token> skipParenComment() {
         const SourceLocation start = location_;
+        std::string lexeme;
         advance();
+        lexeme.push_back('(');
         advance();
+        lexeme.push_back('*');
         while (!isAtEnd()) {
             if (peek() == '*' && peekNext() == ')') {
-                advance();
-                advance();
-                return;
+                lexeme.push_back(advance());
+                lexeme.push_back(advance());
+                return std::nullopt;
             }
-            advance();
+            lexeme.push_back(advance());
         }
-        throw CompilerError("lexer", "unterminated comment", start);
+        return Token{TokenKind::Error, lexeme, start, "unterminated comment"};
     }
 
     Token scanIdentifierOrKeyword(SourceLocation start) {
@@ -308,7 +321,7 @@ private:
             lexeme.push_back(ch);
 
             if (ch == '\n' || ch == '\r') {
-                throw CompilerError("lexer", "unterminated character literal", start);
+                return Token{TokenKind::Error, lexeme, start, "unterminated character literal"};
             }
 
             if (ch == '\'') {
@@ -326,7 +339,7 @@ private:
             ++charCount;
         }
 
-        throw CompilerError("lexer", "unterminated character literal", start);
+        return Token{TokenKind::Error, lexeme, start, "unterminated character literal"};
     }
 
     Token scanSymbol(SourceLocation start) {
@@ -378,7 +391,7 @@ private:
         case ']':
             return Token{TokenKind::RBracket, "]", start};
         default:
-            throw CompilerError("lexer", std::string("unexpected character: ") + ch, start);
+            return Token{TokenKind::Error, std::string(1, ch), start, std::string("unexpected character: ") + ch};
         }
     }
 

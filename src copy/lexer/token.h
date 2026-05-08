@@ -7,16 +7,6 @@
 
 namespace pascal_s2c {
 
-// 词法单元类别枚举。
-// 使用位置：
-// 1) Lexer 根据源码字符流生成对应 kind。
-// 2) Parser 按 kind 进行语法分支匹配（expect/check/match）。
-// 3) 报错与调试阶段通过 tokenKindName 输出可读名称。
-// 存储信息：
-// - 标识符/字面量
-// - 关键字
-// - 运算符与分隔符
-// - 结束标记 EndOfFile
 enum class TokenKind {
     Identifier,
     IntegerLiteral,
@@ -85,25 +75,14 @@ enum class TokenKind {
     EndOfFile
 };
 
-// 单个 token 结构。
-// 使用位置：
-// 1) Lexer 作为 tokenize 的产物元素。
-// 2) Parser 消费 token 序列并构建 AST。
-// 存储信息：
-// - kind: token 类型
-// - lexeme: 原词素文本（标识符会标准化为小写）
-// - location: 起始源码位置（行/列）
 struct Token {
     TokenKind kind = TokenKind::EndOfFile;
     std::string lexeme;
     SourceLocation location;
 };
 
-// 词法分析阶段的标准输出类型：Token 序列。
-// 示例：program main; -> [Program, Identifier("main"), Semicolon, EndOfFile]
 using TokenList = std::vector<Token>;
 
-// 将 TokenKind 转成可读字符串，主要用于日志、调试和错误输出。
 inline const char* tokenKindName(TokenKind kind) {
     switch (kind) {
     case TokenKind::Identifier:

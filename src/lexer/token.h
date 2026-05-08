@@ -8,6 +8,7 @@
 namespace pascal_s2c {
 
 enum class TokenKind {
+    Error,
     Identifier,
     IntegerLiteral,
     RealLiteral,
@@ -79,12 +80,15 @@ struct Token {
     TokenKind kind = TokenKind::EndOfFile;
     std::string lexeme;
     SourceLocation location;
+    std::string diagnostic;
 };
 
 using TokenList = std::vector<Token>;
 
 inline const char* tokenKindName(TokenKind kind) {
     switch (kind) {
+    case TokenKind::Error:
+        return "Error";
     case TokenKind::Identifier:
         return "Identifier";
     case TokenKind::IntegerLiteral:

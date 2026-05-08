@@ -1,5 +1,7 @@
 #include "driver/compiler.h"
 
+#include <sstream>
+
 #include "codegen/c_codegen.h"
 #include "common/util.h"
 #include "lexer/lexer.h"
@@ -9,6 +11,58 @@
 
 namespace pascal_s2c {
 
+namespace {
+
+std::string escapeLexeme(const std::string& lexeme) {
+    std::string escaped;
+    escaped.reserve(lexeme.size());
+
+    for (char ch : lexeme) {
+        switch (ch) {
+        case '\n':
+            escaped += "\\n";
+            break;
+        case '\r':
+            escaped += "\\r";
+            break;
+        case '\t':
+            escaped += "\\t";
+            break;
+        case '\\':
+            escaped += "\\\\";
+            break;
+        case '"':
+            escaped += "\\\"";
+            break;
+        default:
+            escaped.push_back(ch);
+            break;
+        }
+    }
+
+    return escaped;
+}
+
+std::string formatTokens(const TokenList& tokens) {
+    std::ostringstream output;
+    for (const Token& token : tokens) {
+        output << token.location.line << ':' << token.location.column << ' '
+               << tokenKindName(token.kind) << " \"" << escapeLexeme(token.lexeme) << "\"\n";
+    }
+    return output.str();
+}
+
+}  // namespace
+
+std::string Compiler::lexSource(const std::string& source) const {
+    Lexer lexer;
+    return formatTokens(lexer.tokenize(source));
+}
+
+std::string Compiler::lexFile(const std::string& path) const {
+    return lexSource(readTextFile(path));
+}
+
 std::string Compiler::compileSource(const std::string& source) const {
     Lexer lexer;
     Parser parser;
@@ -16,7 +70,6 @@ std::string Compiler::compileSource(const std::string& source) const {
     LoweringPass lowering;
     CCodeGenerator codegen;
 
-    // 前端流水线：源码 -> token 序列 -> AST -> 语义上下文 -> lowered 视图 -> C 代码文本。
     TokenList tokens = lexer.tokenize(source);
     ProgramPtr program = parser.parse(tokens);
     SemanticContext semantic = analyzer.analyze(*program);
@@ -25,7 +78,6 @@ std::string Compiler::compileSource(const std::string& source) const {
 }
 
 std::string Compiler::compileFile(const std::string& path) const {
-    // 文件入口统一复用 compileSource 的编译流水线。
     return compileSource(readTextFile(path));
 }
 

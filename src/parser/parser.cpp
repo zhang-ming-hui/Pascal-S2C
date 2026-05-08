@@ -16,10 +16,11 @@ namespace {
 
 class ParserImpl {
 public:
-    explicit ParserImpl(const TokenList& tokens) : tokens_(tokens) {}
+    ParserImpl(const TokenList& tokens, std::vector<CompilerError>* diagnostics)
+        : tokens_(tokens), diagnostics_(diagnostics) {}
 
     ProgramPtr parseProgram() {
-        ProgramPtr program;
+        ProgramPtr program = makePlaceholderProgram("__error__");
         try {
             const Token programToken = expect(TokenKind::Program, "expected 'program'");
             const Token name = expect(TokenKind::Identifier, "expected program name");
@@ -44,17 +45,24 @@ public:
             expect(TokenKind::Dot, "expected '.' at end of program");
             expect(TokenKind::EndOfFile, "expected end of file");
         } catch (const CompilerError& error) {
-            if (error.stage() != "parser") {
-                throw;
+            if (error.stage() == "parser") {
+                recordError(error);
+            } else {
+                appendDiagnostic(error);
             }
-            recordError(error);
         }
 
-        throwIfRecoveredErrors();
+        flushRecoveredErrors();
         return program;
     }
 
 private:
+    void skipErrorTokens() {
+        while (index_ < tokens_.size() && tokens_[index_].kind == TokenKind::Error) {
+            ++index_;
+        }
+    }
+
     const Token& current() const {
         if (index_ < tokens_.size()) {
             return tokens_[index_];
@@ -67,10 +75,11 @@ private:
     }
 
     bool isAtEnd() const {
-        return current().kind == TokenKind::EndOfFile;
+        return index_ >= tokens_.size() || current().kind == TokenKind::EndOfFile;
     }
 
-    bool check(TokenKind kind) const {
+    bool check(TokenKind kind) {
+        skipErrorTokens();
         return current().kind == kind;
     }
 
@@ -83,10 +92,17 @@ private:
     }
 
     Token expect(TokenKind kind, const std::string& message) {
+        skipErrorTokens();
         if (!check(kind)) {
             throw CompilerError("parser", message, current().location);
         }
         return tokens_[index_++];
+    }
+
+    void appendDiagnostic(const CompilerError& error) {
+        if (diagnostics_ != nullptr) {
+            diagnostics_->push_back(error);
+        }
     }
 
     void recordError(const CompilerError& error) {
@@ -127,10 +143,16 @@ private:
         throw CompilerError("parser", oss.str(), errors_.front().location());
     }
 
-    void throwIfRecoveredErrors() const {
-        if (!errors_.empty()) {
-            throwAggregatedErrors();
+    void flushRecoveredErrors() {
+        if (errors_.empty()) {
+            return;
         }
+        if (diagnostics_ != nullptr) {
+            diagnostics_->insert(diagnostics_->end(), errors_.begin(), errors_.end());
+            errors_.clear();
+            return;
+        }
+        throwAggregatedErrors();
     }
 
     void parseProgramHeaderElement() {
@@ -426,6 +448,7 @@ private:
     }
 
     std::unique_ptr<Stmt> parseStatement() {
+        skipErrorTokens();
         switch (current().kind) {
         case TokenKind::Begin:
             return parseCompoundStatement();
@@ -685,6 +708,7 @@ private:
     }
 
     std::unique_ptr<Expr> parsePrimaryExpression() {
+        skipErrorTokens();
         switch (current().kind) {
         case TokenKind::IntegerLiteral:
         case TokenKind::RealLiteral:
@@ -816,12 +840,13 @@ private:
     const TokenList& tokens_;
     std::size_t index_ = 0;
     std::vector<CompilerError> errors_;
+    std::vector<CompilerError>* diagnostics_ = nullptr;
 };
 
 }  // namespace
 
-ProgramPtr Parser::parse(const TokenList& tokens) const {
-    ParserImpl parser(tokens);
+ProgramPtr Parser::parse(const TokenList& tokens, std::vector<CompilerError>* diagnostics) const {
+    ParserImpl parser(tokens, diagnostics);
     return parser.parseProgram();
 }
 

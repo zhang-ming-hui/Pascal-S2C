@@ -1,6 +1,7 @@
 #include "semantic/analyzer.h"
 
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -13,16 +14,55 @@ namespace {
 
 class AnalyzerImpl {
 public:
-    explicit AnalyzerImpl(SemanticContext& context) : context_(context) {}
+    AnalyzerImpl(SemanticContext& context, std::vector<CompilerError>* diagnostics)
+        : context_(context), diagnostics_(diagnostics) {}
 
     void analyzeProgram(const ProgramNode& program) {
         context_.entryProgramName = program.name;
         Scope& global = createScope(nullptr);
         context_.globalScope = &global;
         analyzeBlock(*program.block, global, true);
+        flushErrors();
     }
 
 private:
+    void appendDiagnostic(const CompilerError& error) {
+        if (diagnostics_ != nullptr) {
+            diagnostics_->push_back(error);
+        }
+    }
+
+    void recordError(const CompilerError& error) {
+        errors_.push_back(error);
+    }
+
+    [[noreturn]] void throwAggregatedErrors() const {
+        if (errors_.empty()) {
+            throw CompilerError("semantic", "unknown semantic error");
+        }
+
+        std::ostringstream oss;
+        oss << errors_.size() << " semantic error(s):";
+        for (const CompilerError& error : errors_) {
+            oss << "\n- line " << error.location().line
+                << ", column " << error.location().column
+                << ": " << error.what();
+        }
+        throw CompilerError("semantic", oss.str(), errors_.front().location());
+    }
+
+    void flushErrors() {
+        if (errors_.empty()) {
+            return;
+        }
+        if (diagnostics_ != nullptr) {
+            diagnostics_->insert(diagnostics_->end(), errors_.begin(), errors_.end());
+            errors_.clear();
+            return;
+        }
+        throwAggregatedErrors();
+    }
+
     Scope& createScope(const Scope* parent) {
         context_.ownedScopes.push_back(std::make_unique<Scope>(parent));
         return *context_.ownedScopes.back();
@@ -40,76 +80,116 @@ private:
 
     void declareConsts(const BlockNode& block, Scope& scope, bool isGlobalScope) {
         for (const auto& decl : block.constDecls) {
-            TypeInfo type = analyzeExpression(*decl->value, scope);
-            Symbol symbol;
-            symbol.name = decl->name;
-            symbol.kind = SymbolKind::Constant;
-            symbol.type = type;
-            symbol.isGlobal = isGlobalScope;
-            defineSymbol(scope, std::move(symbol), decl->loc);
+            try {
+                TypeInfo type = analyzeExpression(*decl->value, scope);
+                Symbol symbol;
+                symbol.name = decl->name;
+                symbol.kind = SymbolKind::Constant;
+                symbol.type = type;
+                symbol.isGlobal = isGlobalScope;
+                defineSymbol(scope, std::move(symbol), decl->loc);
+            } catch (const CompilerError& error) {
+                if (error.stage() == "semantic") {
+                    recordError(error);
+                    continue;
+                }
+                throw;
+            }
         }
     }
 
     void declareVars(const BlockNode& block, Scope& scope, bool isGlobalScope) {
         for (const auto& decl : block.varDecls) {
-            TypeInfo type = resolveType(*decl->type);
-            for (const std::string& name : decl->names) {
-                Symbol symbol;
-                symbol.name = name;
-                symbol.kind = SymbolKind::Variable;
-                symbol.type = type;
-                symbol.isGlobal = isGlobalScope;
-                defineSymbol(scope, std::move(symbol), decl->loc);
+            try {
+                TypeInfo type = resolveType(*decl->type);
+                for (const std::string& name : decl->names) {
+                    Symbol symbol;
+                    symbol.name = name;
+                    symbol.kind = SymbolKind::Variable;
+                    symbol.type = type;
+                    symbol.isGlobal = isGlobalScope;
+                    defineSymbol(scope, std::move(symbol), decl->loc);
+                }
+            } catch (const CompilerError& error) {
+                if (error.stage() == "semantic") {
+                    recordError(error);
+                    continue;
+                }
+                throw;
             }
         }
     }
 
     void declareSubprogramHeaders(const BlockNode& block, Scope& scope, bool isGlobalScope) {
         for (const auto& subprogram : block.subprograms) {
-            Symbol symbol;
-            symbol.name = subprogram->name;
-            symbol.kind = dynamic_cast<const FunctionDeclNode*>(subprogram.get()) != nullptr
-                ? SymbolKind::Function
-                : SymbolKind::Procedure;
-            symbol.isGlobal = isGlobalScope;
-            symbol.type = makeScalarType(BasicTypeKind::Void);
+            try {
+                Symbol symbol;
+                symbol.name = subprogram->name;
+                symbol.kind = dynamic_cast<const FunctionDeclNode*>(subprogram.get()) != nullptr
+                    ? SymbolKind::Function
+                    : SymbolKind::Procedure;
+                symbol.isGlobal = isGlobalScope;
+                symbol.type = makeScalarType(BasicTypeKind::Void);
 
-            if (const auto* function = dynamic_cast<const FunctionDeclNode*>(subprogram.get())) {
-                symbol.type = makeScalarType(function->returnType);
-            }
-
-            for (const auto& param : subprogram->params) {
-                TypeInfo paramType = makeScalarType(param->type);
-                for (std::size_t i = 0; i < param->names.size(); ++i) {
-                    SymbolParameter parameter;
-                    parameter.type = paramType;
-                    parameter.isVar = param->passMode == ParamPassMode::Var;
-                    symbol.parameters.push_back(parameter);
+                if (const auto* function = dynamic_cast<const FunctionDeclNode*>(subprogram.get())) {
+                    symbol.type = makeScalarType(function->returnType);
                 }
-            }
 
-            defineSymbol(scope, std::move(symbol), subprogram->loc);
+                for (const auto& param : subprogram->params) {
+                    TypeInfo paramType = makeScalarType(param->type);
+                    for (std::size_t i = 0; i < param->names.size(); ++i) {
+                        SymbolParameter parameter;
+                        parameter.type = paramType;
+                        parameter.isVar = param->passMode == ParamPassMode::Var;
+                        symbol.parameters.push_back(parameter);
+                    }
+                }
+
+                defineSymbol(scope, std::move(symbol), subprogram->loc);
+            } catch (const CompilerError& error) {
+                if (error.stage() == "semantic") {
+                    recordError(error);
+                    continue;
+                }
+                throw;
+            }
         }
     }
 
     void analyzeSubprogramBodies(const BlockNode& block, Scope& parentScope) {
         for (const auto& subprogram : block.subprograms) {
-            Scope& childScope = createScope(&parentScope);
-            declareParameters(*subprogram, childScope);
-            analyzeBlock(*subprogram->block, childScope, false);
+            try {
+                Scope& childScope = createScope(&parentScope);
+                declareParameters(*subprogram, childScope);
+                analyzeBlock(*subprogram->block, childScope, false);
+            } catch (const CompilerError& error) {
+                if (error.stage() == "semantic") {
+                    recordError(error);
+                    continue;
+                }
+                throw;
+            }
         }
     }
 
     void declareParameters(const SubprogramDeclNode& subprogram, Scope& scope) {
         for (const auto& param : subprogram.params) {
-            TypeInfo type = makeScalarType(param->type);
-            for (const std::string& name : param->names) {
-                Symbol symbol;
-                symbol.name = name;
-                symbol.kind = SymbolKind::Parameter;
-                symbol.type = type;
-                symbol.isVarParameter = param->passMode == ParamPassMode::Var;
-                defineSymbol(scope, std::move(symbol), param->loc);
+            try {
+                TypeInfo type = makeScalarType(param->type);
+                for (const std::string& name : param->names) {
+                    Symbol symbol;
+                    symbol.name = name;
+                    symbol.kind = SymbolKind::Parameter;
+                    symbol.type = type;
+                    symbol.isVarParameter = param->passMode == ParamPassMode::Var;
+                    defineSymbol(scope, std::move(symbol), param->loc);
+                }
+            } catch (const CompilerError& error) {
+                if (error.stage() == "semantic") {
+                    recordError(error);
+                    continue;
+                }
+                throw;
             }
         }
     }
@@ -117,7 +197,15 @@ private:
     void analyzeStatement(const Stmt& stmt, Scope& scope) {
         if (const auto* compound = dynamic_cast<const CompoundStmtNode*>(&stmt)) {
             for (const auto& child : compound->statements) {
-                analyzeStatement(*child, scope);
+                try {
+                    analyzeStatement(*child, scope);
+                } catch (const CompilerError& error) {
+                    if (error.stage() == "semantic") {
+                        recordError(error);
+                        continue;
+                    }
+                    throw;
+                }
             }
             return;
         }
@@ -428,13 +516,15 @@ private:
     }
 
     SemanticContext& context_;
+    std::vector<CompilerError>* diagnostics_ = nullptr;
+    std::vector<CompilerError> errors_;
 };
 
 }  // namespace
 
-SemanticContext SemanticAnalyzer::analyze(const ProgramNode& program) const {
+SemanticContext SemanticAnalyzer::analyze(const ProgramNode& program, std::vector<CompilerError>* diagnostics) const {
     SemanticContext context;
-    AnalyzerImpl analyzer(context);
+    AnalyzerImpl analyzer(context, diagnostics);
     analyzer.analyzeProgram(program);
     return context;
 }
