@@ -116,6 +116,16 @@ struct WriteStmtNode : Stmt {
     std::vector<std::unique_ptr<Expr>> values;
 };
 
+struct CaseBranchNode : Node {
+    std::vector<std::unique_ptr<Expr>> labels;
+    std::unique_ptr<Stmt> body;
+};
+
+struct CaseStmtNode : Stmt {
+    std::unique_ptr<Expr> selector;
+    std::vector<std::unique_ptr<CaseBranchNode>> branches;
+};
+
 enum class BinaryOp {
     Add,
     Sub,

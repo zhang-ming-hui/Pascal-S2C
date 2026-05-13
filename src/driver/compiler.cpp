@@ -113,6 +113,10 @@ std::string Compiler::compileSource(const std::string& source) const {
     collectLexerDiagnostics(tokens, diagnostics);
 
     ProgramPtr program = parser.parse(tokens, &diagnostics);
+    if (!diagnostics.empty()) {
+        throwAggregatedDiagnostics(std::move(diagnostics));
+    }
+
     SemanticContext semantic = analyzer.analyze(*program, &diagnostics);
     if (!diagnostics.empty()) {
         throwAggregatedDiagnostics(std::move(diagnostics));

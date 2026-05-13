@@ -241,6 +241,11 @@ private:
             return;
         }
 
+        if (const auto* caseStmt = dynamic_cast<const CaseStmtNode*>(&stmt)) {
+            analyzeExpression(*caseStmt->selector, scope);
+            throw CompilerError("semantic", "case statement is parsed but not semantically supported yet", caseStmt->loc);
+        }
+
         if (dynamic_cast<const BreakStmtNode*>(&stmt) != nullptr) {
             return;
         }

@@ -74,6 +74,14 @@ private:
         return tokens_[index_ - 1];
     }
 
+    const Token& peek(std::size_t offset) const {
+        const std::size_t target = index_ + offset;
+        if (target < tokens_.size()) {
+            return tokens_[target];
+        }
+        return tokens_.back();
+    }
+
     bool isAtEnd() const {
         return index_ >= tokens_.size() || current().kind == TokenKind::EndOfFile;
     }
@@ -109,11 +117,32 @@ private:
         errors_.push_back(error);
     }
 
-    void synchronizeToSemicolon() {
-        while (!isAtEnd() && !check(TokenKind::Semicolon)) {
+    bool isStatementRecoveryBoundary(TokenKind kind) const {
+        switch (kind) {
+        case TokenKind::Semicolon:
+        case TokenKind::End:
+        case TokenKind::Case:
+        case TokenKind::Else:
+        case TokenKind::Until:
+        case TokenKind::Dot:
+        case TokenKind::EndOfFile:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    void synchronizeStatement() {
+        while (!isAtEnd() && !isStatementRecoveryBoundary(current().kind)) {
             ++index_;
         }
         match(TokenKind::Semicolon);
+    }
+
+    void synchronizeFormalParameter() {
+        while (!isAtEnd() && !check(TokenKind::Semicolon) && !check(TokenKind::RParen)) {
+            ++index_;
+        }
     }
 
     void skipUnsupportedTypeDeclarations() {
@@ -123,7 +152,7 @@ private:
 
         recordError(CompilerError("parser", "type declarations are not implemented yet", previous().location));
         while (check(TokenKind::Identifier)) {
-            synchronizeToSemicolon();
+            synchronizeStatement();
         }
     }
 
@@ -185,7 +214,7 @@ private:
                     throw;
                 }
                 recordError(error);
-                synchronizeToSemicolon();
+                synchronizeStatement();
             }
         }
 
@@ -196,7 +225,7 @@ private:
                 throw;
             }
             recordError(error);
-            synchronizeToSemicolon();
+            synchronizeStatement();
             block->body = std::make_unique<CompoundStmtNode>();
             block->body->loc = current().location;
         }
@@ -223,7 +252,7 @@ private:
                     throw;
                 }
                 recordError(error);
-                synchronizeToSemicolon();
+                synchronizeStatement();
             }
         }
     }
@@ -242,7 +271,7 @@ private:
                     throw;
                 }
                 recordError(error);
-                synchronizeToSemicolon();
+                synchronizeStatement();
             }
         }
     }
@@ -392,10 +421,29 @@ private:
             return params;
         }
 
-        if (!check(TokenKind::RParen)) {
-            params.push_back(parseParameterGroup());
-            while (match(TokenKind::Semicolon)) {
+        while (!check(TokenKind::RParen) && !isAtEnd()) {
+            try {
                 params.push_back(parseParameterGroup());
+            } catch (const CompilerError& error) {
+                if (error.stage() != "parser") {
+                    throw;
+                }
+                recordError(error);
+                synchronizeFormalParameter();
+            }
+
+            if (check(TokenKind::RParen)) {
+                break;
+            }
+
+            if (!match(TokenKind::Semicolon)) {
+                recordError(CompilerError("parser", "expected ';' between parameter groups", current().location));
+                synchronizeFormalParameter();
+                if (check(TokenKind::Semicolon)) {
+                    match(TokenKind::Semicolon);
+                    continue;
+                }
+                break;
             }
         }
 
@@ -419,13 +467,19 @@ private:
         const Token begin = expect(TokenKind::Begin, "expected 'begin'");
         auto stmt = std::make_unique<CompoundStmtNode>();
         stmt->loc = begin.location;
+        bool hasParsedStatement = false;
 
-        while (!check(TokenKind::End) && !isAtEnd()) {
+        while (!check(TokenKind::End) && !check(TokenKind::Dot) && !isAtEnd()) {
             if (match(TokenKind::Semicolon)) {
+                if (!hasParsedStatement) {
+                    recordError(CompilerError("parser", "unexpected ';' after 'begin'", previous().location));
+                }
                 continue;
             }
+            const std::size_t recoveryCheckpoint = index_;
             try {
                 stmt->statements.push_back(parseStatement());
+                hasParsedStatement = true;
                 if (!check(TokenKind::End)) {
                     expect(TokenKind::Semicolon, "expected ';' between statements");
                 }
@@ -434,11 +488,14 @@ private:
                     throw;
                 }
                 recordError(error);
-                synchronizeToSemicolon();
+                synchronizeStatement();
+                if (index_ == recoveryCheckpoint && !isAtEnd()) {
+                    ++index_;
+                }
             }
         }
 
-        if (isAtEnd()) {
+        if (isAtEnd() || check(TokenKind::Dot)) {
             recordError(CompilerError("parser", "expected 'end'", current().location));
             return stmt;
         }
@@ -458,6 +515,8 @@ private:
             return parseWhileStatement();
         case TokenKind::For:
             return parseForStatement();
+        case TokenKind::Case:
+            return parseCaseStatement();
         case TokenKind::Break:
             return parseBreakStatement();
         case TokenKind::Read:
@@ -535,6 +594,13 @@ private:
         stmt->condition = parseExpression();
         expect(TokenKind::Then, "expected 'then'");
         stmt->thenBranch = parseStatement();
+
+        if (check(TokenKind::Semicolon) && peek(1).kind == TokenKind::Else) {
+            const Token straySemicolon = current();
+            ++index_;
+            recordError(CompilerError("parser", "unexpected ';' before 'else'", straySemicolon.location));
+        }
+
         if (match(TokenKind::Else)) {
             stmt->elseBranch = parseStatement();
         }
@@ -549,6 +615,84 @@ private:
         expect(TokenKind::Do, "expected 'do'");
         stmt->body = parseStatement();
         return stmt;
+    }
+
+    std::unique_ptr<Stmt> parseCaseStatement() {
+        const Token keyword = expect(TokenKind::Case, "expected 'case'");
+        auto stmt = std::make_unique<CaseStmtNode>();
+        stmt->loc = keyword.location;
+        stmt->selector = parseExpression();
+        expect(TokenKind::Of, "expected 'of' in case statement");
+
+        while (!check(TokenKind::End) && !isAtEnd()) {
+            if (match(TokenKind::Semicolon)) {
+                continue;
+            }
+            stmt->branches.push_back(parseCaseBranch());
+            if (check(TokenKind::End)) {
+                break;
+            }
+            expect(TokenKind::Semicolon, "expected ';' between case branches");
+        }
+
+        if (isAtEnd()) {
+            throw CompilerError("parser", "expected 'end' to close case statement", current().location);
+        }
+
+        if (check(TokenKind::End) && (peek(1).kind == TokenKind::Dot || peek(1).kind == TokenKind::EndOfFile)) {
+            throw CompilerError("parser", "expected 'end' to close case statement", current().location);
+        }
+
+        expect(TokenKind::End, "expected 'end' to close case statement");
+        return stmt;
+    }
+
+    std::unique_ptr<CaseBranchNode> parseCaseBranch() {
+        auto branch = std::make_unique<CaseBranchNode>();
+        branch->loc = current().location;
+        branch->labels = parseCaseLabelList();
+        expect(TokenKind::Colon, "expected ':' after case label");
+        branch->body = parseStatement();
+        return branch;
+    }
+
+    std::vector<std::unique_ptr<Expr>> parseCaseLabelList() {
+        std::vector<std::unique_ptr<Expr>> labels;
+        labels.push_back(parseCaseLabel());
+        while (match(TokenKind::Comma)) {
+            labels.push_back(parseCaseLabel());
+        }
+        return labels;
+    }
+
+    std::unique_ptr<Expr> parseCaseLabel() {
+        skipErrorTokens();
+        switch (current().kind) {
+        case TokenKind::IntegerLiteral:
+        case TokenKind::RealLiteral:
+        case TokenKind::CharLiteral:
+        case TokenKind::StringLiteral:
+        case TokenKind::True:
+        case TokenKind::False:
+            return parseLiteral();
+        case TokenKind::Plus:
+        case TokenKind::Minus: {
+            const Token sign = current();
+            ++index_;
+            if (!check(TokenKind::IntegerLiteral) && !check(TokenKind::RealLiteral)) {
+                throw CompilerError("parser", "expected literal after sign in case label", current().location);
+            }
+
+            auto label = parseLiteral();
+            auto unary = std::make_unique<UnaryExprNode>();
+            unary->loc = sign.location;
+            unary->op = sign.kind == TokenKind::Minus ? UnaryOp::Minus : UnaryOp::Plus;
+            unary->operand = std::move(label);
+            return unary;
+        }
+        default:
+            throw CompilerError("parser", "expected literal in case label", current().location);
+        }
     }
 
     std::unique_ptr<Stmt> parseBreakStatement() {

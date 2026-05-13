@@ -10,7 +10,7 @@
 | 类型嵌套           | 仅可用标准类型嵌套       | 可用任意类型嵌套       | 例如：`array [0..0] of array [0..0] of integer`      |
 | 常量定界           | 仅可用数字常量定界       | 可用任意常量定界       | 例如：`array [M..N] of integer`                      |
 | 程序嵌套           | 不支持程序嵌套           | 支持程序嵌套           | C语言不支持程序嵌套                                  |
-| `case`语句         | 不支持`case`语句         | 支持`case`语句         | 类似C语言的`switch`语句                              |
+| `case`语句         | 语法分析已支持，语义/代码生成暂未完整支持 | 支持`case`语句         | 目前可识别 `case ... of ... end` 结构并进行语法报错恢复 |
 | `while`语句        | 不支持`while`语句        | 支持`while`语句        | 类似C语言的`while`语句                               |
 | `repeat until`语句 | 不支持`repeat until`语句 | 支持`repeat until`语句 | 类似C语言的`do while`语句                            |
 | `downto`关键字     | 不支持`downto`关键字     | 支持`downto`关键字     | `downto`关键字用于`for`循环中，意为倒序              |

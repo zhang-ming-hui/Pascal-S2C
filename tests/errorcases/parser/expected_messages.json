@@ -1,0 +1,46 @@
+{
+  "CaseMissingEnd": {
+    "returncode": 1,
+    "stderr": "frontend error (10:1): 1 error(s):\n- [parser] line 10, column 1: expected 'end' to close case statement"
+  },
+  "DuplicateCommaInParameterList": {
+    "returncode": 1,
+    "stderr": "frontend error (2:16): 1 error(s):\n- [parser] line 2, column 16: expected identifier after ','"
+  },
+  "ForLoopMissingDo": {
+    "returncode": 1,
+    "stderr": "frontend error (6:7): 1 error(s):\n- [parser] line 6, column 7: expected 'do' in for statement"
+  },
+  "IllegalLeftValue": {
+    "returncode": 1,
+    "stderr": "frontend error (3:4): 1 error(s):\n- [parser] line 3, column 4: unexpected token in statement"
+  },
+  "IncompleteArrayDeclaration": {
+    "returncode": 1,
+    "stderr": "frontend error (2:1): 1 error(s):\n- [parser] line 2, column 1: type declarations are not implemented yet"
+  },
+  "MissingFinalDot": {
+    "returncode": 1,
+    "stderr": "frontend error (4:4): 1 error(s):\n- [parser] line 4, column 4: expected '.' at end of program"
+  },
+  "MissingSemicolon": {
+    "returncode": 1,
+    "stderr": "frontend error (6:4): 1 error(s):\n- [parser] line 6, column 4: expected ';' between statements"
+  },
+  "MissingThenInIfStatement": {
+    "returncode": 1,
+    "stderr": "frontend error (7:7): 1 error(s):\n- [parser] line 7, column 7: expected 'then'"
+  },
+  "SemicolonBeforeElse": {
+    "returncode": 1,
+    "stderr": "frontend error (7:26): 1 error(s):\n- [parser] line 7, column 26: unexpected ';' before 'else'"
+  },
+  "UnbalancedParentheses": {
+    "returncode": 1,
+    "stderr": "frontend error (4:1): 1 error(s):\n- [parser] line 4, column 1: expected ')' after argument list"
+  },
+  "WrongSemicolonAfterBegin": {
+    "returncode": 1,
+    "stderr": "frontend error (2:6): 1 error(s):\n- [parser] line 2, column 6: unexpected ';' after 'begin'"
+  }
+}

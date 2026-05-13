@@ -6,8 +6,8 @@
 `tests/testcases/` 黄金用例。
 
 本项目的实现目标应当以现有测试集覆盖到的语言子集为准，而不是一次性覆盖
-教材版 Pascal-S 的全部语法。文档中出现、但当前测试集中没有出现的功能
-`record`、`type`、`case`、`repeat until`、`downto`，应延后实现。
+教材版 Pascal-S 的全部语法。文档中出现、但当前测试集中没有出现或尚未完整打通后续阶段的功能
+`record`、`type`、`repeat until`、`downto`，以及仅完成 parser 骨架支持的 `case`，应分阶段实现。
 
 ## 实现语言与总体方案
 
