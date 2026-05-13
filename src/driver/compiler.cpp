@@ -111,6 +111,9 @@ std::string Compiler::compileSource(const std::string& source) const {
 
     TokenList tokens = lexer.tokenize(source);
     collectLexerDiagnostics(tokens, diagnostics);
+    if (!diagnostics.empty()) {
+        throwAggregatedDiagnostics(std::move(diagnostics));
+    }
 
     ProgramPtr program = parser.parse(tokens, &diagnostics);
     if (!diagnostics.empty()) {

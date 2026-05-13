@@ -1,0 +1,70 @@
+{
+  "01_unterminated_brace_comment": {
+    "returncode": 1,
+    "stderr": "frontend error (1:1): 1 error(s):\n- [lexer] line 1, column 1: unterminated comment"
+  },
+  "02_unterminated_paren_comment": {
+    "returncode": 1,
+    "stderr": "frontend error (1:1): 1 error(s):\n- [lexer] line 1, column 1: unterminated comment"
+  },
+  "03_unterminated_string_literal": {
+    "returncode": 1,
+    "stderr": "frontend error (3:9): 1 error(s):\n- [lexer] line 3, column 9: unterminated character literal"
+  },
+  "04_unterminated_char_literal": {
+    "returncode": 1,
+    "stderr": "frontend error (3:8): 1 error(s):\n- [lexer] line 3, column 8: unterminated character literal"
+  },
+  "05_unexpected_character_at": {
+    "returncode": 1,
+    "stderr": "frontend error (6:8): 1 error(s):\n- [lexer] line 6, column 8: unexpected character: @"
+  },
+  "06_unexpected_character_hash": {
+    "returncode": 1,
+    "stderr": "frontend error (3:9): 1 error(s):\n- [lexer] line 3, column 9: unexpected character: #"
+  },
+  "07_unexpected_character_dollar": {
+    "returncode": 1,
+    "stderr": "frontend error (5:8): 1 error(s):\n- [lexer] line 5, column 8: unexpected character: $"
+  },
+  "09_unexpected_character_question": {
+    "returncode": 1,
+    "stderr": "frontend error (3:11): 1 error(s):\n- [lexer] line 3, column 11: unexpected character: ?"
+  },
+  "10_unexpected_character_tilde": {
+    "returncode": 1,
+    "stderr": "frontend error (3:8): 1 error(s):\n- [lexer] line 3, column 8: unexpected character: ~"
+  },
+  "11_unexpected_character_percent": {
+    "returncode": 1,
+    "stderr": "frontend error (3:11): 1 error(s):\n- [lexer] line 3, column 11: unexpected character: %"
+  },
+  "14_invalid_number_multiple_dots": {
+    "returncode": 1,
+    "stderr": "frontend error (5:8): 1 error(s):\n- [lexer] line 5, column 8: invalid numeric literal"
+  },
+  "15_invalid_number_leading_dot": {
+    "returncode": 1,
+    "stderr": "frontend error (5:8): 1 error(s):\n- [lexer] line 5, column 8: invalid numeric literal"
+  },
+  "17_multiline_char_literal": {
+    "returncode": 1,
+    "stderr": "frontend error (3:9): 2 error(s):\n- [lexer] line 3, column 9: unterminated character literal\n- [lexer] line 4, column 2: unterminated character literal"
+  },
+  "18_unexpected_eof_in_comment": {
+    "returncode": 1,
+    "stderr": "frontend error (1:1): 1 error(s):\n- [lexer] line 1, column 1: unterminated comment"
+  },
+  "19_unexpected_eof_in_string": {
+    "returncode": 1,
+    "stderr": "frontend error (3:9): 1 error(s):\n- [lexer] line 3, column 9: unterminated character literal"
+  },
+  "24_only_unterminated_comment": {
+    "returncode": 1,
+    "stderr": "frontend error (1:1): 1 error(s):\n- [lexer] line 1, column 1: unterminated comment"
+  },
+  "25_integrated": {
+    "returncode": 1,
+    "stderr": "frontend error (9:8): 7 error(s):\n- [lexer] line 9, column 8: unexpected character: @\n- [lexer] line 9, column 10: unexpected character: #\n- [lexer] line 9, column 12: unexpected character: $\n- [lexer] line 9, column 14: unexpected character: %\n- [lexer] line 9, column 16: unexpected character: ^\n- [lexer] line 9, column 18: unexpected character: &\n- [lexer] line 12, column 3: unterminated comment"
+  }
+}

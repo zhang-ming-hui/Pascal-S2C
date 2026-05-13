@@ -308,6 +308,19 @@ private:
             }
         }
 
+        if (isReal && peek() == '.' &&
+            std::isdigit(static_cast<unsigned char>(peekNext())) != 0) {
+            lexeme.push_back(advance());
+            while (!isAtEnd()) {
+                const char ch = peek();
+                if (std::isalnum(static_cast<unsigned char>(ch)) == 0 && ch != '.') {
+                    break;
+                }
+                lexeme.push_back(advance());
+            }
+            return Token{TokenKind::Error, lexeme, start, "invalid numeric literal"};
+        }
+
         return Token{isReal ? TokenKind::RealLiteral : TokenKind::IntegerLiteral, lexeme, start};
     }
 
@@ -366,6 +379,13 @@ private:
         case '.':
             if (match('.')) {
                 return Token{TokenKind::Range, "..", start};
+            }
+            if (std::isdigit(static_cast<unsigned char>(peek())) != 0) {
+                std::string lexeme = ".";
+                while (!isAtEnd() && std::isdigit(static_cast<unsigned char>(peek())) != 0) {
+                    lexeme.push_back(advance());
+                }
+                return Token{TokenKind::Error, lexeme, start, "invalid numeric literal"};
             }
             return Token{TokenKind::Dot, ".", start};
         case '=':

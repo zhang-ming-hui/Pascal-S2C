@@ -58,11 +58,13 @@ python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe
 这个脚本会同时检查：
 
 - `tests/testcases/` 下的正常翻译样例
+- `tests/errorcases/lexer/` 下的词法错误样例
 - `tests/errorcases/parser/` 下的语法错误恢复样例
 
 因此每次修改 parser、semantic、错误恢复逻辑后，可以直接通过这一条命令确认：
 
 - 正常翻译是否回归
+- 词法错误行为是否回归
 - 错误恢复和报错信息是否回归
 
 更详细的用法请见：
@@ -79,4 +81,4 @@ python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe
 python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden
 ```
 
-这样可以更快检查 `tests/errorcases/parser/` 下的错误恢复行为是否发生回归。
+这样可以更快检查 `tests/errorcases/lexer/` 和 `tests/errorcases/parser/` 下的错误行为是否发生回归。
