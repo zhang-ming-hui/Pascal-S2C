@@ -17,6 +17,7 @@ add_executable(pascal_s2c
     src/codegen/c_writer.cpp
     src/codegen/c_codegen.cpp
     src/driver/compiler.cpp
+    src/json_util/json_emitter.cpp
 )
 
 target_include_directories(pascal_s2c PRIVATE src)
