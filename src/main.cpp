@@ -12,7 +12,8 @@ namespace {
 
 enum class OutputMode {
     Code,
-    Lexer
+    Lexer,
+    ParseJson
 };
 
 struct CliOptions {
@@ -26,6 +27,8 @@ void printUsage() {
     std::cerr << "   or: pascal_s2c -i <input.pas> [-o <output.c>]\n";
     std::cerr << "   or: pascal_s2c --lexer <input.pas> [output.tokens]\n";
     std::cerr << "   or: pascal_s2c --lexer -i <input.pas> [-o <output.tokens>]\n";
+    std::cerr << "   or: pascal_s2c --parse-json <input.pas> [output.ast.json]\n";
+    std::cerr << "   or: pascal_s2c --parse-json -i <input.pas> [-o <output.ast.json>]\n";
 }
 
 std::optional<CliOptions> parseArgs(int argc, char** argv) {
@@ -35,11 +38,26 @@ std::optional<CliOptions> parseArgs(int argc, char** argv) {
 
     CliOptions options;
     bool sawNamedPathFlag = false;
+    const auto selectMode = [&](OutputMode mode) -> bool {
+        if (options.mode != OutputMode::Code && options.mode != mode) {
+            return false;
+        }
+        options.mode = mode;
+        return true;
+    };
 
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
         if (arg == "--lexer") {
-            options.mode = OutputMode::Lexer;
+            if (!selectMode(OutputMode::Lexer)) {
+                return std::nullopt;
+            }
+            continue;
+        }
+        if (arg == "--parse-json") {
+            if (!selectMode(OutputMode::ParseJson)) {
+                return std::nullopt;
+            }
             continue;
         }
         if (arg == "-i" || arg == "--input") {
@@ -83,7 +101,18 @@ std::optional<CliOptions> parseArgs(int argc, char** argv) {
 
 std::string inferOutputPath(const std::string& inputPath, OutputMode mode) {
     std::filesystem::path path(inputPath);
-    path.replace_extension(mode == OutputMode::Lexer ? ".tokens" : ".c");
+    switch (mode) {
+    case OutputMode::Lexer:
+        path.replace_extension(".tokens");
+        break;
+    case OutputMode::ParseJson:
+        path.replace_extension(".ast.json");
+        break;
+    case OutputMode::Code:
+    default:
+        path.replace_extension(".c");
+        break;
+    }
     return path.string();
 }
 
@@ -98,9 +127,19 @@ int main(int argc, char** argv) {
 
     try {
         pascal_s2c::Compiler compiler;
-        const std::string output = options->mode == OutputMode::Lexer
-                                       ? compiler.lexFile(options->inputPath)
-                                       : compiler.compileFile(options->inputPath);
+        std::string output;
+        switch (options->mode) {
+        case OutputMode::Lexer:
+            output = compiler.lexFile(options->inputPath);
+            break;
+        case OutputMode::ParseJson:
+            output = compiler.parseJsonFile(options->inputPath);
+            break;
+        case OutputMode::Code:
+        default:
+            output = compiler.compileFile(options->inputPath);
+            break;
+        }
         const std::string outputPath =
             options->outputPath.value_or(inferOutputPath(options->inputPath, options->mode));
 

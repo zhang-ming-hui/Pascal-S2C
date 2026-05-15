@@ -7,6 +7,7 @@
 #include "codegen/c_codegen.h"
 #include "common/error.h"
 #include "common/util.h"
+#include "json_util/json_emitter.h"
 #include "lexer/lexer.h"
 #include "lower/lower.h"
 #include "parser/parser.h"
@@ -90,23 +91,9 @@ void collectLexerDiagnostics(const TokenList& tokens, std::vector<CompilerError>
     throw CompilerError("frontend", oss.str(), diagnostics.front().location());
 }
 
-}  // namespace
-
-std::string Compiler::lexSource(const std::string& source) const {
-    Lexer lexer;
-    return formatTokens(lexer.tokenize(source));
-}
-
-std::string Compiler::lexFile(const std::string& path) const {
-    return lexSource(readTextFile(path));
-}
-
-std::string Compiler::compileSource(const std::string& source) const {
+ProgramPtr parseProgramOrThrow(const std::string& source) {
     Lexer lexer;
     Parser parser;
-    SemanticAnalyzer analyzer;
-    LoweringPass lowering;
-    CCodeGenerator codegen;
     std::vector<CompilerError> diagnostics;
 
     TokenList tokens = lexer.tokenize(source);
@@ -119,6 +106,36 @@ std::string Compiler::compileSource(const std::string& source) const {
     if (!diagnostics.empty()) {
         throwAggregatedDiagnostics(std::move(diagnostics));
     }
+
+    return program;
+}
+
+}  // namespace
+
+std::string Compiler::lexSource(const std::string& source) const {
+    Lexer lexer;
+    return formatTokens(lexer.tokenize(source));
+}
+
+std::string Compiler::lexFile(const std::string& path) const {
+    return lexSource(readTextFile(path));
+}
+
+std::string Compiler::parseJsonSource(const std::string& source) const {
+    ProgramPtr program = parseProgramOrThrow(source);
+    return emitParseJson(*program);
+}
+
+std::string Compiler::parseJsonFile(const std::string& path) const {
+    return parseJsonSource(readTextFile(path));
+}
+
+std::string Compiler::compileSource(const std::string& source) const {
+    SemanticAnalyzer analyzer;
+    LoweringPass lowering;
+    CCodeGenerator codegen;
+    std::vector<CompilerError> diagnostics;
+    ProgramPtr program = parseProgramOrThrow(source);
 
     SemanticContext semantic = analyzer.analyze(*program, &diagnostics);
     if (!diagnostics.empty()) {
