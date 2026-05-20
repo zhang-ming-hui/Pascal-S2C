@@ -1,4 +1,4 @@
-# Repository Guidelines
++# Repository Guidelines
 
 ## Project Structure & Module Organization
 `src/` contains the compiler pipeline, split by stage: `lexer/`, `parser/`, `semantic/`, `lower/`, `codegen/`, plus shared utilities in `common/` and orchestration in `driver/`. The entry point is `src/main.cpp`. Tests live under `tests/testcases/`: Pascal inputs in `pascal/`, expected C output in `expected/`, and optional stdin fixtures in `input/`. Helper automation is in `scripts/`, and reference material belongs in `docs/`. Treat `src copy/` as non-authoritative unless a task explicitly targets it.
