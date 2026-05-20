@@ -91,25 +91,6 @@ void collectLexerDiagnostics(const TokenList& tokens, std::vector<CompilerError>
     throw CompilerError("frontend", oss.str(), diagnostics.front().location());
 }
 
-ProgramPtr parseProgramOrThrow(const std::string& source) {
-    Lexer lexer;
-    Parser parser;
-    std::vector<CompilerError> diagnostics;
-
-    TokenList tokens = lexer.tokenize(source);
-    collectLexerDiagnostics(tokens, diagnostics);
-    if (!diagnostics.empty()) {
-        throwAggregatedDiagnostics(std::move(diagnostics));
-    }
-
-    ProgramPtr program = parser.parse(tokens, &diagnostics);
-    if (!diagnostics.empty()) {
-        throwAggregatedDiagnostics(std::move(diagnostics));
-    }
-
-    return program;
-}
-
 }  // namespace
 
 std::string Compiler::lexSource(const std::string& source) const {
@@ -122,7 +103,18 @@ std::string Compiler::lexFile(const std::string& path) const {
 }
 
 std::string Compiler::parseJsonSource(const std::string& source) const {
-    ProgramPtr program = parseProgramOrThrow(source);
+    Lexer lexer;
+    Parser parser;
+    std::vector<CompilerError> diagnostics;
+
+    TokenList tokens = lexer.tokenize(source);
+    collectLexerDiagnostics(tokens, diagnostics);
+
+    ProgramPtr program = parser.parse(tokens, &diagnostics);
+    if (!diagnostics.empty()) {
+        throwAggregatedDiagnostics(std::move(diagnostics));
+    }
+
     return emitParseJson(*program);
 }
 
@@ -131,11 +123,17 @@ std::string Compiler::parseJsonFile(const std::string& path) const {
 }
 
 std::string Compiler::compileSource(const std::string& source) const {
+    Lexer lexer;
+    Parser parser;
     SemanticAnalyzer analyzer;
     LoweringPass lowering;
     CCodeGenerator codegen;
     std::vector<CompilerError> diagnostics;
-    ProgramPtr program = parseProgramOrThrow(source);
+
+    TokenList tokens = lexer.tokenize(source);
+    collectLexerDiagnostics(tokens, diagnostics);
+
+    ProgramPtr program = parser.parse(tokens, &diagnostics);
 
     SemanticContext semantic = analyzer.analyze(*program, &diagnostics);
     if (!diagnostics.empty()) {
