@@ -1,7 +1,7 @@
 program DuplicateComma(output);
 procedure p(a ,, b : integer);
 begin
-   writeln(a,b)
+   write(a,b)
 end;
 begin
    p(1,2)

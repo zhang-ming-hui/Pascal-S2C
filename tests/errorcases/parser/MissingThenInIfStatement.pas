@@ -4,5 +4,5 @@ var
 begin
    x := 10;
    if x > 0
-      writeln('positive')
+      write('positive')
 end.

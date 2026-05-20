@@ -17,6 +17,8 @@ LEXER_ERROR_DIR = ROOT / "tests" / "errorcases" / "lexer"
 LEXER_EXPECTED_PATH = LEXER_ERROR_DIR / "expected_messages.json"
 PARSER_ERROR_DIR = ROOT / "tests" / "errorcases" / "parser"
 PARSER_EXPECTED_PATH = PARSER_ERROR_DIR / "expected_messages.json"
+SEMANTIC_ERROR_DIR = ROOT / "tests" / "errorcases" / "semantic"
+SEMANTIC_EXPECTED_PATH = SEMANTIC_ERROR_DIR / "expected_messages.json"
 
 
 @dataclass
@@ -31,7 +33,7 @@ class ErrorCaseResult:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run unified regression checks for golden outputs and parser error-recovery cases."
+        description="Run unified regression checks for golden outputs and lexer/parser/semantic error cases."
     )
     parser.add_argument(
         "--compiler",
@@ -55,6 +57,11 @@ def parse_args() -> argparse.Namespace:
         help="Skip parser error-recovery regression tests",
     )
     parser.add_argument(
+        "--skip-semantic-errors",
+        action="store_true",
+        help="Skip semantic error regression tests",
+    )
+    parser.add_argument(
         "--golden-case",
         action="append",
         default=[],
@@ -73,6 +80,12 @@ def parse_args() -> argparse.Namespace:
         help="Run only specific parser error case stems",
     )
     parser.add_argument(
+        "--semantic-case",
+        action="append",
+        default=[],
+        help="Run only specific semantic error case stems",
+    )
+    parser.add_argument(
         "--show-lexer-details",
         type=int,
         default=10,
@@ -83,6 +96,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=10,
         help="Show mismatch details for up to N parser error cases",
+    )
+    parser.add_argument(
+        "--show-semantic-details",
+        type=int,
+        default=10,
+        help="Show mismatch details for up to N semantic error cases",
     )
     parser.add_argument(
         "--golden-show-diff",
@@ -116,6 +135,13 @@ def load_lexer_expectations() -> dict[str, dict[str, object]]:
     if not LEXER_EXPECTED_PATH.exists():
         raise SystemExit(f"missing lexer error expectations: {LEXER_EXPECTED_PATH}")
     with LEXER_EXPECTED_PATH.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def load_semantic_expectations() -> dict[str, dict[str, object]]:
+    if not SEMANTIC_EXPECTED_PATH.exists():
+        raise SystemExit(f"missing semantic error expectations: {SEMANTIC_EXPECTED_PATH}")
+    with SEMANTIC_EXPECTED_PATH.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -257,6 +283,34 @@ def run_parser_suite(compiler: pathlib.Path, args: argparse.Namespace) -> int:
     return 0 if not failed else 1
 
 
+def run_semantic_suite(compiler: pathlib.Path, args: argparse.Namespace) -> int:
+    expectations = load_semantic_expectations()
+    cases = collect_error_cases(SEMANTIC_ERROR_DIR, args.semantic_case, expectations, "semantic")
+    if not cases:
+        print("semantic error cases: 0")
+        return 0
+
+    results = [run_error_case(compiler, path, expectations) for path in cases]
+    passed = sum(1 for item in results if item.ok)
+    failed = [item for item in results if not item.ok]
+
+    print(f"semantic error cases: {len(results)}")
+    print(f"semantic error passed: {passed}")
+    print(f"semantic error failed: {len(failed)}")
+
+    for item in failed[: args.show_semantic_details]:
+        print()
+        print(f"--- semantic mismatch: {item.name} ---")
+        print(f"expected return code: {item.expected_returncode}")
+        print(f"actual return code:   {item.actual_returncode}")
+        print("expected stderr:")
+        print(item.expected_stderr)
+        print("actual stderr:")
+        print(item.actual_stderr)
+
+    return 0 if not failed else 1
+
+
 def main() -> int:
     args = parse_args()
     compiler = ensure_compiler(args.compiler)
@@ -276,8 +330,13 @@ def main() -> int:
     if not args.skip_parser_errors:
         print("== parser error regression ==")
         overall_status = max(overall_status, run_parser_suite(compiler, args))
+        print()
 
-    if args.skip_golden and args.skip_lexer_errors and args.skip_parser_errors:
+    if not args.skip_semantic_errors:
+        print("== semantic error regression ==")
+        overall_status = max(overall_status, run_semantic_suite(compiler, args))
+
+    if args.skip_golden and args.skip_lexer_errors and args.skip_parser_errors and args.skip_semantic_errors:
         print("nothing selected")
         return 1
 

@@ -5,7 +5,7 @@
   },
   "DuplicateCommaInParameterList": {
     "returncode": 1,
-    "stderr": "frontend error (2:16): 1 error(s):\n- [parser] line 2, column 16: expected identifier after ','"
+    "stderr": "frontend error (2:16): 3 error(s):\n- [parser] line 2, column 16: expected identifier after ','\n- [semantic] line 4, column 10: undefined symbol: a\n- [semantic] line 7, column 4: argument count mismatch in call to: p"
   },
   "ForLoopMissingDo": {
     "returncode": 1,
@@ -21,7 +21,7 @@
   },
   "MissingFinalDot": {
     "returncode": 1,
-    "stderr": "frontend error (4:4): 1 error(s):\n- [parser] line 4, column 4: expected '.' at end of program"
+    "stderr": "frontend error (5:1): 1 error(s):\n- [parser] line 5, column 1: expected '.' at end of program"
   },
   "MissingSemicolon": {
     "returncode": 1,
@@ -33,11 +33,11 @@
   },
   "SemicolonBeforeElse": {
     "returncode": 1,
-    "stderr": "frontend error (7:26): 1 error(s):\n- [parser] line 7, column 26: unexpected ';' before 'else'"
+    "stderr": "frontend error (7:24): 1 error(s):\n- [parser] line 7, column 24: unexpected ';' before 'else'"
   },
   "UnbalancedParentheses": {
     "returncode": 1,
-    "stderr": "frontend error (4:1): 1 error(s):\n- [parser] line 4, column 1: expected ')' after argument list"
+    "stderr": "frontend error (4:1): 1 error(s):\n- [parser] line 4, column 1: expected ')' after write arguments"
   },
   "WrongSemicolonAfterBegin": {
     "returncode": 1,

@@ -13,15 +13,15 @@
   },
   "04_INVALID_ID_USAGE": {
     "returncode": 1,
-    "stderr": "frontend error (8:5): 1 error(s):\n- [semantic] line 8, column 5: indexed symbol is not an array: x"
+    "stderr": "frontend error (8:5): 2 error(s):\n- [semantic] line 8, column 5: indexed symbol is not an array: x\n- [semantic] line 9, column 5: incompatible assignment: cannot assign integer to array[1..10] of integer"
   },
   "05_ARRAY_INDEX_ERR": {
     "returncode": 1,
-    "stderr": "frontend error (8:5): 1 error(s):\n- [semantic] line 8, column 5: indexed symbol is not an array: x"
+    "stderr": "frontend error (7:5): 1 error(s):\n- [semantic] line 7, column 5: indexed symbol is not an array: x"
   },
   "06_PARAM_MISMATCH": {
     "returncode": 1,
-    "stderr": "frontend error (13:5): 4 error(s):\n- [semantic] line 13, column 5: argument count mismatch in call to: foo\n- [semantic] line 14, column 5: argument count mismatch in call to: foo\n- [semantic] line 15, column 5: argument count mismatch in call to: foo\n- [semantic] line 16, column 5: argument count mismatch in call to: add"
+    "stderr": "frontend error (13:5): 4 error(s):\n- [semantic] line 13, column 5: argument count mismatch in call to: foo\n- [semantic] line 14, column 5: argument count mismatch in call to: foo\n- [semantic] line 15, column 5: argument type mismatch in call to: foo\n- [semantic] line 16, column 5: argument type mismatch in call to: add"
   },
   "07_INVALID_CONST_V": {
     "returncode": 1,

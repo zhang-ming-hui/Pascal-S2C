@@ -1,4 +1,4 @@
 program MissingFinalDot(output);
 begin
-   writeln('Hello')
+   write('Hello')
 end

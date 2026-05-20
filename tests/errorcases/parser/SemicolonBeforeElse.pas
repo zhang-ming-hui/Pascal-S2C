@@ -4,7 +4,7 @@ var
 begin
    a := 5;
    if a > 0 then
-      writeln('positive');
+      write('positive');
    else
-      writeln('non-positive')
+      write('non-positive')
 end.

@@ -4,17 +4,19 @@
 
 `run_regression.py` 是当前仓库的统一回归测试入口。
 
-它会在一次执行中同时检查两类内容：
+它会在一次执行中同时检查四类内容：
 
 - `tests/testcases/` 下的正常翻译样例
 - `tests/errorcases/lexer/` 下的词法错误样例
 - `tests/errorcases/parser/` 下的语法错误恢复样例
+- `tests/errorcases/semantic/` 下的语义错误样例
 
 这样在修改 parser、semantic 或错误恢复逻辑之后，可以同时看到：
 
 - 正常 Pascal 到 C 的翻译结果是否回归
 - 词法错误检测行为是否回归
 - 语法错误恢复和报错信息是否回归
+- 语义分析报错行为是否回归
 
 ## 相关文件
 
@@ -22,6 +24,7 @@
 - golden 样例脚本：`scripts/run_golden.py`
 - lexer 错误样例期望：`tests/errorcases/lexer/expected_messages.json`
 - parser 错误样例期望：`tests/errorcases/parser/expected_messages.json`
+- semantic 错误样例期望：`tests/errorcases/semantic/expected_messages.json`
 
 ## 基本用法
 
@@ -80,48 +83,73 @@ tests/errorcases/parser/expected_messages.json
 
 因此这部分不是“人工观察”，而是可以稳定回归检查的。
 
+### 4. Semantic 错误回归
+
+这一部分会运行 `tests/errorcases/semantic/` 下的每个错误样例，并检查：
+
+- 返回码是否符合预期
+- stderr 是否与期望完全一致
+
+期望基线保存在：
+
+```text
+tests/errorcases/semantic/expected_messages.json
+```
+
 ## 常用命令
 
 只跑 lexer 错误回归：
 
 ```powershell
-python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-parser-errors
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-parser-errors --skip-semantic-errors
 ```
 
 只跑 parser 错误恢复回归：
 
 ```powershell
-python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors --skip-semantic-errors
+```
+
+只跑 semantic 错误回归：
+
+```powershell
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors --skip-parser-errors
 ```
 
 只跑 golden 回归：
 
 ```powershell
-python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-parser-errors
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-parser-errors --skip-semantic-errors
 ```
 
 只跑一个 lexer 错误样例：
 
 ```powershell
-python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-parser-errors --lexer-case 15_invalid_number_leading_dot
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-parser-errors --skip-semantic-errors --lexer-case 15_invalid_number_leading_dot
 ```
 
 只跑一个 parser 错误样例：
 
 ```powershell
-python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors --parser-case SemicolonBeforeElse
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors --skip-semantic-errors --parser-case SemicolonBeforeElse
 ```
 
 一次跑多个 parser 错误样例：
 
 ```powershell
-python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors --parser-case SemicolonBeforeElse --parser-case WrongSemicolonAfterBegin
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors --skip-semantic-errors --parser-case SemicolonBeforeElse --parser-case WrongSemicolonAfterBegin
+```
+
+只跑一个 semantic 错误样例：
+
+```powershell
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-golden --skip-lexer-errors --skip-parser-errors --semantic-case 01_UNDEFINED_ID
 ```
 
 只跑一个 golden 样例：
 
 ```powershell
-python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-parser-errors --golden-case 00_main
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --skip-parser-errors --skip-semantic-errors --golden-case 00_main
 ```
 
 限制 lexer 错误回归输出的失败详情条数：
@@ -134,6 +162,12 @@ python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --s
 
 ```powershell
 python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --show-parser-details 3
+```
+
+限制 semantic 错误回归输出的失败详情条数：
+
+```powershell
+python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --show-semantic-details 3
 ```
 
 将 `--exact-only` 透传给 golden 回归：
@@ -149,7 +183,7 @@ python .\scripts\run_regression.py --compiler .\build\Release\pascal_s2c.exe --g
 
 因此可以直接用于本地回归检查，也方便后续接入 CI。
 
-## 更新 lexer / parser 错误样例基线
+## 更新 lexer / parser / semantic 错误样例基线
 
 当 lexer 的错误检测行为被有意修改后，需要同步更新：
 
@@ -161,6 +195,12 @@ tests/errorcases/lexer/expected_messages.json
 
 ```text
 tests/errorcases/parser/expected_messages.json
+```
+
+当 semantic 的报错行为被有意修改后，需要同步更新：
+
+```text
+tests/errorcases/semantic/expected_messages.json
 ```
 
 建议流程：
@@ -179,4 +219,5 @@ tests/errorcases/parser/expected_messages.json
 
 - lexer 错误回归全部通过
 - parser 错误恢复回归全部通过
+- semantic 错误回归全部通过
 - 但 golden 回归因为缺失样例而失败

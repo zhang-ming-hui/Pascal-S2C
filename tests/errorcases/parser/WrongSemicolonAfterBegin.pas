@@ -1,4 +1,4 @@
 program WrongSemicolonAfterBegin(output);
 begin;
-   writeln('oops')
+   write('oops')
 end.
