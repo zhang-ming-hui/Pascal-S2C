@@ -577,13 +577,22 @@ private:
             return stmt;
         }
 
+        // if (!indices.empty()) {
+        //     throw CompilerError("parser", "indexed expression cannot be used as a statement here", name.location);
+        // }
+
         if (!indices.empty()) {
-            throw CompilerError("parser", "indexed expression cannot be used as a statement here", name.location);
+            recordError(CompilerError("parser", "indexed expression cannot be used as a statement here", name.location));
+        }
+
+        if (!check(TokenKind::LParen) && !check(TokenKind::Assign) && !check(TokenKind::LBracket)) {
+            recordError(CompilerError("parser", "invalid syntax after identifier, expected ':=' or '('", current().location));
         }
 
         auto stmt = std::make_unique<CallStmtNode>();
         stmt->loc = name.location;
         stmt->name = name.lexeme;
+
         return stmt;
     }
 

@@ -70,15 +70,15 @@ void collectLexerDiagnostics(const TokenList& tokens, std::vector<CompilerError>
 }
 
 [[noreturn]] void throwAggregatedDiagnostics(std::vector<CompilerError> diagnostics) {
-    std::stable_sort(diagnostics.begin(), diagnostics.end(), [](const CompilerError& lhs, const CompilerError& rhs) {
-        if (lhs.location().line != rhs.location().line) {
-            return lhs.location().line < rhs.location().line;
-        }
-        if (lhs.location().column != rhs.location().column) {
-            return lhs.location().column < rhs.location().column;
-        }
-        return lhs.stage() < rhs.stage();
-    });
+    // std::stable_sort(diagnostics.begin(), diagnostics.end(), [](const CompilerError& lhs, const CompilerError& rhs) {
+    //     if (lhs.location().line != rhs.location().line) {
+    //         return lhs.location().line < rhs.location().line;
+    //     }
+    //     if (lhs.location().column != rhs.location().column) {
+    //         return lhs.location().column < rhs.location().column;
+    //     }
+    //     return lhs.stage() < rhs.stage();
+    // });
 
     std::ostringstream oss;
     oss << diagnostics.size() << " error(s):";

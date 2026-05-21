@@ -9,7 +9,7 @@ import sys
 from dataclasses import dataclass
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_COMPILER = ROOT / "build" / "Debug" / "pascal_s2c.exe"
+DEFAULT_COMPILER = ROOT / "build" / "pascal_s2c"
 GOLDEN_SCRIPT = ROOT / "scripts" / "run_golden.py"
 GOLDEN_PASCAL_DIR = ROOT / "tests" / "testcases" / "pascal"
 GOLDEN_EXPECTED_DIR = ROOT / "tests" / "testcases" / "expected"
