@@ -257,6 +257,11 @@ private:
             return;
         }
 
+        if (const auto* caseStmt = dynamic_cast<const CaseStmtNode*>(&stmt)) {
+            emitCaseStatement(*caseStmt, context);
+            return;
+        }
+
         if (const auto* forStmt = dynamic_cast<const ForStmtNode*>(&stmt)) {
             const std::string loopVar = emitNamedLValue(forStmt->varName, context);
             writer_.writeLine(
@@ -290,6 +295,32 @@ private:
             writer_.writeLine(line);
             return;
         }
+    }
+
+    void emitCaseStatement(const CaseStmtNode& stmt, const FunctionContext* context) {
+        const std::string selectorName = nextTempName("_case_selector");
+        writer_.writeLine("{");
+        writer_.indent();
+        writer_.writeLine(typeName(exprType(*stmt.selector)) + " " + selectorName + " = " + emitExpr(*stmt.selector, context) + ";");
+        for (std::size_t branchIndex = 0; branchIndex < stmt.branches.size(); ++branchIndex) {
+            const CaseBranchNode& branch = *stmt.branches[branchIndex];
+            const std::string keyword = branchIndex == 0 ? "if" : "else if";
+            writer_.writeLine(keyword + " (" + emitCaseBranchCondition(branch, selectorName, context) + ")");
+            emitStructuredStatement(*branch.body, context);
+        }
+        writer_.dedent();
+        writer_.writeLine("}");
+    }
+
+    std::string emitCaseBranchCondition(const CaseBranchNode& branch,
+                                        const std::string& selector,
+                                        const FunctionContext* context) const {
+        std::vector<std::string> comparisons;
+        comparisons.reserve(branch.labels.size());
+        for (const auto& label : branch.labels) {
+            comparisons.push_back(selector + " == " + emitExpr(*label, context));
+        }
+        return join(comparisons, " || ");
     }
 
     void emitStructuredStatement(const Stmt& stmt, const FunctionContext* context) {
@@ -612,6 +643,10 @@ private:
         return result;
     }
 
+    std::string nextTempName(const std::string& prefix) {
+        return prefix + std::to_string(tempCounter_++);
+    }
+
     std::string binaryOp(const BinaryExprNode& expr) const {
         switch (expr.op) {
         case BinaryOp::Add:
@@ -660,6 +695,7 @@ private:
 
     const LoweredProgramView& view_;
     CWriter writer_;
+    int tempCounter_ = 0;
 };
 
 }  // namespace

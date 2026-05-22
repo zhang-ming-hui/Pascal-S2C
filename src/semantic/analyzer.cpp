@@ -1,9 +1,11 @@
 #include "semantic/analyzer.h"
 
+#include <cctype>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 #include "common/error.h"
@@ -11,6 +13,69 @@
 namespace pascal_s2c {
 
 namespace {
+
+bool isCaseSelectorType(const TypeInfo& type) {
+    return !type.isArray &&
+           (type.basic == BasicTypeKind::Integer ||
+            type.basic == BasicTypeKind::Boolean ||
+            type.basic == BasicTypeKind::Char);
+}
+
+std::string normalizeCaseLabelText(const std::string& text) {
+    std::string lowered;
+    lowered.reserve(text.size());
+    for (const char ch : text) {
+        lowered.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+    }
+    return lowered;
+}
+
+long long caseLabelIntegerValue(const Expr& expr) {
+    if (const auto* literal = dynamic_cast<const LiteralExprNode*>(&expr)) {
+        if (literal->kind == LiteralKind::Int) {
+            return std::stoll(literal->rawText);
+        }
+    }
+
+    if (const auto* unary = dynamic_cast<const UnaryExprNode*>(&expr)) {
+        if (unary->op != UnaryOp::Plus && unary->op != UnaryOp::Minus) {
+            throw CompilerError("semantic", "invalid case label", expr.loc);
+        }
+        const auto* literal = dynamic_cast<const LiteralExprNode*>(unary->operand.get());
+        if (literal == nullptr || literal->kind != LiteralKind::Int) {
+            throw CompilerError("semantic", "invalid case label", expr.loc);
+        }
+        const long long value = std::stoll(literal->rawText);
+        return unary->op == UnaryOp::Minus ? -value : value;
+    }
+
+    throw CompilerError("semantic", "invalid case label", expr.loc);
+}
+
+std::string caseLabelKey(const Expr& expr, const TypeInfo& type) {
+    if (type.isArray) {
+        throw CompilerError("semantic", "invalid case label", expr.loc);
+    }
+
+    if (type.basic == BasicTypeKind::Integer) {
+        return "int:" + std::to_string(caseLabelIntegerValue(expr));
+    }
+
+    const auto* literal = dynamic_cast<const LiteralExprNode*>(&expr);
+    if (literal == nullptr) {
+        throw CompilerError("semantic", "invalid case label", expr.loc);
+    }
+
+    if (type.basic == BasicTypeKind::Boolean) {
+        return "bool:" + normalizeCaseLabelText(literal->rawText);
+    }
+
+    if (type.basic == BasicTypeKind::Char) {
+        return "char:" + literal->rawText;
+    }
+
+    throw CompilerError("semantic", "invalid case label", expr.loc);
+}
 
 class AnalyzerImpl {
 public:
@@ -242,8 +307,32 @@ private:
         }
 
         if (const auto* caseStmt = dynamic_cast<const CaseStmtNode*>(&stmt)) {
-            analyzeExpression(*caseStmt->selector, scope);
-            throw CompilerError("semantic", "case statement is parsed but not semantically supported yet", caseStmt->loc);
+            const TypeInfo selectorType = analyzeExpression(*caseStmt->selector, scope);
+            if (!isCaseSelectorType(selectorType)) {
+                throw CompilerError("semantic", "case selector must be integer, boolean, or char", caseStmt->selector->loc);
+            }
+
+            std::unordered_set<std::string> seenLabels;
+            for (const auto& branch : caseStmt->branches) {
+                for (const auto& label : branch->labels) {
+                    const TypeInfo labelType = analyzeExpression(*label, scope);
+                    if (!sameType(selectorType, labelType)) {
+                        throw CompilerError(
+                            "semantic",
+                            "case label type mismatch: expected " + toString(selectorType) +
+                                ", got " + toString(labelType),
+                            label->loc);
+                    }
+
+                    const std::string key = caseLabelKey(*label, labelType);
+                    if (!seenLabels.insert(key).second) {
+                        throw CompilerError("semantic", "duplicate case label", label->loc);
+                    }
+                }
+
+                analyzeStatement(*branch->body, scope);
+            }
+            return;
         }
 
         if (dynamic_cast<const BreakStmtNode*>(&stmt) != nullptr) {

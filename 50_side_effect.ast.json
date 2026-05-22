@@ -1,0 +1,757 @@
+{
+  "phase": "PARSE",
+  "status": "ok",
+  "ast": {
+    "node_type": "Program",
+    "loc": {
+      "line": 1,
+      "column": 1
+    },
+    "name": "main",
+    "block": {
+      "node_type": "Block",
+      "loc": {
+        "line": 2,
+        "column": 1
+      },
+      "const_decls": [
+        {
+          "node_type": "ConstDecl",
+          "loc": {
+            "line": 2,
+            "column": 7
+          },
+          "name": "split",
+          "value": {
+            "node_type": "LiteralExpr",
+            "loc": {
+              "line": 2,
+              "column": 15
+            },
+            "kind": "char",
+            "raw_text": "','"
+          }
+        }
+      ],
+      "var_decls": [
+        {
+          "node_type": "VarDecl",
+          "loc": {
+            "line": 4,
+            "column": 3
+          },
+          "names": [
+            "a",
+            "b",
+            "k",
+            "i"
+          ],
+          "type": {
+            "node_type": "ScalarType",
+            "loc": {
+              "line": 4,
+              "column": 15
+            },
+            "kind": "integer"
+          }
+        }
+      ],
+      "subprograms": [
+        {
+          "node_type": "FunctionDecl",
+          "loc": {
+            "line": 6,
+            "column": 10
+          },
+          "name": "inc_a",
+          "params": [],
+          "return_type": "integer",
+          "block": {
+            "node_type": "Block",
+            "loc": {
+              "line": 7,
+              "column": 1
+            },
+            "const_decls": [],
+            "var_decls": [
+              {
+                "node_type": "VarDecl",
+                "loc": {
+                  "line": 8,
+                  "column": 3
+                },
+                "names": [
+                  "temp_b"
+                ],
+                "type": {
+                  "node_type": "ScalarType",
+                  "loc": {
+                    "line": 8,
+                    "column": 11
+                  },
+                  "kind": "integer"
+                }
+              }
+            ],
+            "subprograms": [],
+            "body": {
+              "node_type": "CompoundStmt",
+              "loc": {
+                "line": 9,
+                "column": 1
+              },
+              "statements": [
+                {
+                  "node_type": "AssignStmt",
+                  "loc": {
+                    "line": 10,
+                    "column": 3
+                  },
+                  "target": {
+                    "node_type": "VarExpr",
+                    "loc": {
+                      "line": 10,
+                      "column": 3
+                    },
+                    "name": "temp_b"
+                  },
+                  "value": {
+                    "node_type": "VarExpr",
+                    "loc": {
+                      "line": 10,
+                      "column": 13
+                    },
+                    "name": "a"
+                  }
+                },
+                {
+                  "node_type": "AssignStmt",
+                  "loc": {
+                    "line": 11,
+                    "column": 3
+                  },
+                  "target": {
+                    "node_type": "VarExpr",
+                    "loc": {
+                      "line": 11,
+                      "column": 3
+                    },
+                    "name": "temp_b"
+                  },
+                  "value": {
+                    "node_type": "BinaryExpr",
+                    "loc": {
+                      "line": 11,
+                      "column": 20
+                    },
+                    "op": "+",
+                    "lhs": {
+                      "node_type": "VarExpr",
+                      "loc": {
+                        "line": 11,
+                        "column": 13
+                      },
+                      "name": "temp_b"
+                    },
+                    "rhs": {
+                      "node_type": "LiteralExpr",
+                      "loc": {
+                        "line": 11,
+                        "column": 22
+                      },
+                      "kind": "int",
+                      "raw_text": "1"
+                    }
+                  }
+                },
+                {
+                  "node_type": "AssignStmt",
+                  "loc": {
+                    "line": 12,
+                    "column": 3
+                  },
+                  "target": {
+                    "node_type": "VarExpr",
+                    "loc": {
+                      "line": 12,
+                      "column": 3
+                    },
+                    "name": "a"
+                  },
+                  "value": {
+                    "node_type": "VarExpr",
+                    "loc": {
+                      "line": 12,
+                      "column": 8
+                    },
+                    "name": "temp_b"
+                  }
+                },
+                {
+                  "node_type": "AssignStmt",
+                  "loc": {
+                    "line": 13,
+                    "column": 3
+                  },
+                  "target": {
+                    "node_type": "VarExpr",
+                    "loc": {
+                      "line": 13,
+                      "column": 3
+                    },
+                    "name": "inc_a"
+                  },
+                  "value": {
+                    "node_type": "VarExpr",
+                    "loc": {
+                      "line": 13,
+                      "column": 12
+                    },
+                    "name": "a"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "body": {
+        "node_type": "CompoundStmt",
+        "loc": {
+          "line": 17,
+          "column": 1
+        },
+        "statements": [
+          {
+            "node_type": "AssignStmt",
+            "loc": {
+              "line": 18,
+              "column": 3
+            },
+            "target": {
+              "node_type": "VarExpr",
+              "loc": {
+                "line": 18,
+                "column": 3
+              },
+              "name": "a"
+            },
+            "value": {
+              "node_type": "UnaryExpr",
+              "loc": {
+                "line": 18,
+                "column": 8
+              },
+              "op": "-",
+              "operand": {
+                "node_type": "LiteralExpr",
+                "loc": {
+                  "line": 18,
+                  "column": 9
+                },
+                "kind": "int",
+                "raw_text": "1"
+              }
+            }
+          },
+          {
+            "node_type": "AssignStmt",
+            "loc": {
+              "line": 19,
+              "column": 3
+            },
+            "target": {
+              "node_type": "VarExpr",
+              "loc": {
+                "line": 19,
+                "column": 3
+              },
+              "name": "b"
+            },
+            "value": {
+              "node_type": "LiteralExpr",
+              "loc": {
+                "line": 19,
+                "column": 8
+              },
+              "kind": "int",
+              "raw_text": "1"
+            }
+          },
+          {
+            "node_type": "AssignStmt",
+            "loc": {
+              "line": 20,
+              "column": 3
+            },
+            "target": {
+              "node_type": "VarExpr",
+              "loc": {
+                "line": 20,
+                "column": 3
+              },
+              "name": "k"
+            },
+            "value": {
+              "node_type": "LiteralExpr",
+              "loc": {
+                "line": 20,
+                "column": 8
+              },
+              "kind": "int",
+              "raw_text": "5"
+            }
+          },
+          {
+            "node_type": "ForStmt",
+            "loc": {
+              "line": 22,
+              "column": 3
+            },
+            "var_name": "i",
+            "start": {
+              "node_type": "LiteralExpr",
+              "loc": {
+                "line": 22,
+                "column": 12
+              },
+              "kind": "int",
+              "raw_text": "0"
+            },
+            "stop": {
+              "node_type": "VarExpr",
+              "loc": {
+                "line": 22,
+                "column": 17
+              },
+              "name": "k"
+            },
+            "body": {
+              "node_type": "CompoundStmt",
+              "loc": {
+                "line": 23,
+                "column": 3
+              },
+              "statements": [
+                {
+                  "node_type": "IfStmt",
+                  "loc": {
+                    "line": 24,
+                    "column": 5
+                  },
+                  "condition": {
+                    "node_type": "BinaryExpr",
+                    "loc": {
+                      "line": 24,
+                      "column": 38
+                    },
+                    "op": "and",
+                    "lhs": {
+                      "node_type": "BinaryExpr",
+                      "loc": {
+                        "line": 24,
+                        "column": 21
+                      },
+                      "op": "and",
+                      "lhs": {
+                        "node_type": "BinaryExpr",
+                        "loc": {
+                          "line": 24,
+                          "column": 15
+                        },
+                        "op": "<>",
+                        "lhs": {
+                          "node_type": "VarExpr",
+                          "loc": {
+                            "line": 24,
+                            "column": 9
+                          },
+                          "name": "inc_a"
+                        },
+                        "rhs": {
+                          "node_type": "LiteralExpr",
+                          "loc": {
+                            "line": 24,
+                            "column": 18
+                          },
+                          "kind": "int",
+                          "raw_text": "0"
+                        }
+                      },
+                      "rhs": {
+                        "node_type": "BinaryExpr",
+                        "loc": {
+                          "line": 24,
+                          "column": 32
+                        },
+                        "op": "<>",
+                        "lhs": {
+                          "node_type": "VarExpr",
+                          "loc": {
+                            "line": 24,
+                            "column": 26
+                          },
+                          "name": "inc_a"
+                        },
+                        "rhs": {
+                          "node_type": "LiteralExpr",
+                          "loc": {
+                            "line": 24,
+                            "column": 35
+                          },
+                          "kind": "int",
+                          "raw_text": "0"
+                        }
+                      }
+                    },
+                    "rhs": {
+                      "node_type": "BinaryExpr",
+                      "loc": {
+                        "line": 24,
+                        "column": 49
+                      },
+                      "op": "<>",
+                      "lhs": {
+                        "node_type": "VarExpr",
+                        "loc": {
+                          "line": 24,
+                          "column": 43
+                        },
+                        "name": "inc_a"
+                      },
+                      "rhs": {
+                        "node_type": "LiteralExpr",
+                        "loc": {
+                          "line": 24,
+                          "column": 52
+                        },
+                        "kind": "int",
+                        "raw_text": "0"
+                      }
+                    }
+                  },
+                  "then_branch": {
+                    "node_type": "CompoundStmt",
+                    "loc": {
+                      "line": 25,
+                      "column": 5
+                    },
+                    "statements": [
+                      {
+                        "node_type": "WriteStmt",
+                        "loc": {
+                          "line": 26,
+                          "column": 7
+                        },
+                        "values": [
+                          {
+                            "node_type": "VarExpr",
+                            "loc": {
+                              "line": 26,
+                              "column": 13
+                            },
+                            "name": "a"
+                          },
+                          {
+                            "node_type": "VarExpr",
+                            "loc": {
+                              "line": 26,
+                              "column": 16
+                            },
+                            "name": "b"
+                          },
+                          {
+                            "node_type": "VarExpr",
+                            "loc": {
+                              "line": 26,
+                              "column": 19
+                            },
+                            "name": "split"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "else_branch": null
+                },
+                {
+                  "node_type": "IfStmt",
+                  "loc": {
+                    "line": 29,
+                    "column": 5
+                  },
+                  "condition": {
+                    "node_type": "BinaryExpr",
+                    "loc": {
+                      "line": 29,
+                      "column": 21
+                    },
+                    "op": "or",
+                    "lhs": {
+                      "node_type": "BinaryExpr",
+                      "loc": {
+                        "line": 29,
+                        "column": 15
+                      },
+                      "op": "<",
+                      "lhs": {
+                        "node_type": "VarExpr",
+                        "loc": {
+                          "line": 29,
+                          "column": 9
+                        },
+                        "name": "inc_a"
+                      },
+                      "rhs": {
+                        "node_type": "LiteralExpr",
+                        "loc": {
+                          "line": 29,
+                          "column": 17
+                        },
+                        "kind": "int",
+                        "raw_text": "14"
+                      }
+                    },
+                    "rhs": {
+                      "node_type": "BinaryExpr",
+                      "loc": {
+                        "line": 29,
+                        "column": 38
+                      },
+                      "op": "and",
+                      "lhs": {
+                        "node_type": "BinaryExpr",
+                        "loc": {
+                          "line": 29,
+                          "column": 32
+                        },
+                        "op": "<>",
+                        "lhs": {
+                          "node_type": "VarExpr",
+                          "loc": {
+                            "line": 29,
+                            "column": 26
+                          },
+                          "name": "inc_a"
+                        },
+                        "rhs": {
+                          "node_type": "LiteralExpr",
+                          "loc": {
+                            "line": 29,
+                            "column": 35
+                          },
+                          "kind": "int",
+                          "raw_text": "0"
+                        }
+                      },
+                      "rhs": {
+                        "node_type": "BinaryExpr",
+                        "loc": {
+                          "line": 29,
+                          "column": 63
+                        },
+                        "op": "<>",
+                        "lhs": {
+                          "node_type": "BinaryExpr",
+                          "loc": {
+                            "line": 29,
+                            "column": 58
+                          },
+                          "op": "+",
+                          "lhs": {
+                            "node_type": "BinaryExpr",
+                            "loc": {
+                              "line": 29,
+                              "column": 50
+                            },
+                            "op": "-",
+                            "lhs": {
+                              "node_type": "VarExpr",
+                              "loc": {
+                                "line": 29,
+                                "column": 44
+                              },
+                              "name": "inc_a"
+                            },
+                            "rhs": {
+                              "node_type": "VarExpr",
+                              "loc": {
+                                "line": 29,
+                                "column": 52
+                              },
+                              "name": "inc_a"
+                            }
+                          },
+                          "rhs": {
+                            "node_type": "LiteralExpr",
+                            "loc": {
+                              "line": 29,
+                              "column": 60
+                            },
+                            "kind": "int",
+                            "raw_text": "1"
+                          }
+                        },
+                        "rhs": {
+                          "node_type": "LiteralExpr",
+                          "loc": {
+                            "line": 29,
+                            "column": 66
+                          },
+                          "kind": "int",
+                          "raw_text": "0"
+                        }
+                      }
+                    }
+                  },
+                  "then_branch": {
+                    "node_type": "CompoundStmt",
+                    "loc": {
+                      "line": 30,
+                      "column": 5
+                    },
+                    "statements": [
+                      {
+                        "node_type": "WriteStmt",
+                        "loc": {
+                          "line": 31,
+                          "column": 7
+                        },
+                        "values": [
+                          {
+                            "node_type": "VarExpr",
+                            "loc": {
+                              "line": 31,
+                              "column": 13
+                            },
+                            "name": "a"
+                          },
+                          {
+                            "node_type": "VarExpr",
+                            "loc": {
+                              "line": 31,
+                              "column": 16
+                            },
+                            "name": "split"
+                          }
+                        ]
+                      },
+                      {
+                        "node_type": "AssignStmt",
+                        "loc": {
+                          "line": 32,
+                          "column": 7
+                        },
+                        "target": {
+                          "node_type": "VarExpr",
+                          "loc": {
+                            "line": 32,
+                            "column": 7
+                          },
+                          "name": "b"
+                        },
+                        "value": {
+                          "node_type": "BinaryExpr",
+                          "loc": {
+                            "line": 32,
+                            "column": 14
+                          },
+                          "op": "*",
+                          "lhs": {
+                            "node_type": "VarExpr",
+                            "loc": {
+                              "line": 32,
+                              "column": 12
+                            },
+                            "name": "b"
+                          },
+                          "rhs": {
+                            "node_type": "LiteralExpr",
+                            "loc": {
+                              "line": 32,
+                              "column": 16
+                            },
+                            "kind": "int",
+                            "raw_text": "2"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "else_branch": {
+                    "node_type": "CompoundStmt",
+                    "loc": {
+                      "line": 35,
+                      "column": 5
+                    },
+                    "statements": [
+                      {
+                        "node_type": "CallStmt",
+                        "loc": {
+                          "line": 36,
+                          "column": 7
+                        },
+                        "name": "inc_a",
+                        "args": []
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "node_type": "WriteStmt",
+            "loc": {
+              "line": 40,
+              "column": 3
+            },
+            "values": [
+              {
+                "node_type": "VarExpr",
+                "loc": {
+                  "line": 40,
+                  "column": 9
+                },
+                "name": "a"
+              },
+              {
+                "node_type": "VarExpr",
+                "loc": {
+                  "line": 40,
+                  "column": 11
+                },
+                "name": "b"
+              },
+              {
+                "node_type": "VarExpr",
+                "loc": {
+                  "line": 40,
+                  "column": 13
+                },
+                "name": "split"
+              }
+            ]
+          },
+          {
+            "node_type": "WriteStmt",
+            "loc": {
+              "line": 41,
+              "column": 3
+            },
+            "values": [
+              {
+                "node_type": "VarExpr",
+                "loc": {
+                  "line": 41,
+                  "column": 9
+                },
+                "name": "a"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
